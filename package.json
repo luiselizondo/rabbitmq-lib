@@ -1,24 +1,24 @@
 {
-  "name": "rabbitmq-lib",
-  "version": "1.0.0",
-  "description": "RabbitMQ Abstraction Library",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/luiselizondo/rabbitmq-lib.git"
-  },
-  "author": "Luis Elizondo",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/luiselizondo/rabbitmq-lib/issues"
-  },
-  "homepage": "https://github.com/luiselizondo/rabbitmq-lib#readme",
-  "dependencies": {
-    "amqplib": "^0.5.1",
-    "q": "^1.5.0",
-    "uuid": "^3.1.0"
-  }
+	"name": "rabbitmq-lib",
+	"version": "1.0.1",
+	"description": "RabbitMQ Abstraction Library",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/luiselizondo/rabbitmq-lib.git"
+	},
+	"author": "Luis Elizondo",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/luiselizondo/rabbitmq-lib/issues"
+	},
+	"homepage": "https://github.com/luiselizondo/rabbitmq-lib#readme",
+	"dependencies": {
+		"amqplib": "^0.5.1",
+		"q": "^1.5.0",
+		"uuid": "^3.1.0"
+	}
 }
