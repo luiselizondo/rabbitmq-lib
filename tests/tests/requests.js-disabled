@@ -1,0 +1,41 @@
+var should = require('should')
+var MQ = require('../../index')
+var EventEmitter = require('events');
+class Events extends EventEmitter {}
+
+describe('Requests', function () {
+  var config = {
+    exchange_name: 'rabbitmq_lib_test',
+    url: 'amqp://rabbitmq:rabbitmq@localhost:35672/'
+  }
+
+  it("Should be able to send a requests, answer it and respond to it", function (done) {
+    var eventsInstance = new Events();
+    var mq = new MQ(eventsInstance, config)
+
+    var queueName = 'someEventOnQueue4';
+
+    function callbackToExecute(data, next) {
+      console.log('Executed')
+      data.should.have.property('queueName', 'myQueue')
+      done()
+      // return next(false, {message: 'Tested ' + data.queueName})
+    }
+
+    eventsInstance.on(queueName, function (data) {
+      console.log('Received')
+      mq.answerRequest(queueName, callbackToExecute)
+    })
+
+    mq.connect()
+    .then((connection) => {
+      return mq.consumeFromQueue([queueName])
+    })
+    .then(() => {
+      return mq.sendRequest(queueName, {
+        queueName: 'myQueue'
+      })
+    })
+    .catch(done)
+  })
+})

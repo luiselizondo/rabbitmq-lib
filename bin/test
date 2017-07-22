@@ -1,0 +1,47 @@
+#!/bin/bash
+
+RABBIT_CONTAINER_NAME=rabbitmq_lib_test
+RABBIT_CONTAINER_PORT1=34369
+RABBIT_CONTAINER_PORT2=35671
+RABBIT_CONTAINER_PORT3=35672
+RABBIT_CONTAINER_PORT4=46672
+
+function createRabbitContainer() {
+	id=$(docker run -d --name ${RABBIT_CONTAINER_NAME} -p ${RABBIT_CONTAINER_PORT1}:4369 -p ${RABBIT_CONTAINER_PORT2}:5671 -p ${RABBIT_CONTAINER_PORT3}:5672 -p ${RABBIT_CONTAINER_PORT4}:25672 -e RABBITMQ_ERLANG_COOKIE=SWQOKODSQALRPCLNMEQG -e RABBITMQ_DEFAULT_USER=rabbitmq -e RABBITMQ_DEFAULT_PASS=rabbitmq -e RABBITMQ_DEFAULT_VHOST=/ --hostname rabbitmq rabbitmq:alpine)
+	echo $id
+}
+
+function startRabbitContainer() {
+	id=$(docker start ${RABBIT_CONTAINER_NAME})
+  echo $id
+}
+
+function rabbitContainerIsRunning() {
+  status=$(docker ps --filter name=${RABBIT_CONTAINER_NAME} -q)
+  if [[ -n $status ]]; then
+    echo "running"
+  else
+    exists=$(docker ps --filter name=${RABBIT_CONTAINER_NAME} -qa)
+    if [[ -n $exists ]]; then
+      echo "exists-but-is-stopped"
+    else
+      echo "does-not-exist"
+    fi
+  fi
+}
+
+rabbitContainerStatus=$(rabbitContainerIsRunning)
+
+if [[ "${rabbitContainerStatus}" = "running" ]]; then
+  echo "The rabbit container is running, doing nothing"
+elif [[ "${rabbitContainerStatus}" = "exists-but-is-stopped" ]]; then
+  echo "The rabbit container exists but is stopped, starting it"
+  startRabbitContainer
+	sleep 2
+else
+  echo "The rabbit container is not running, starting a new RabbitMQ container using Docker"
+  createRabbitContainer
+  sleep 5
+fi
+
+npm test
