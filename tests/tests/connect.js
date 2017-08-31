@@ -1,8 +1,5 @@
 var should = require('should')
 var MQ = require('../../index')
-var EventEmitter = require('events');
-class Events extends EventEmitter {}
-var eventsInstance = new Events();
 
 describe("RabbitMQ Connection", function () {
   var config = {
@@ -11,7 +8,7 @@ describe("RabbitMQ Connection", function () {
   }
 
   it("Should connect to RabbitMQ", function (done) {
-    var mq = new MQ(eventsInstance, config)
+    var mq = new MQ(config)
 
     mq.connect()
     .then((connection) => {
@@ -23,12 +20,16 @@ describe("RabbitMQ Connection", function () {
 
   it("Should throw an error when passing an invalid connection", function (done) {
     config.url = 'amqp://rabbitmq:nopass@localhost:35672/'
-    var mq = new MQ(eventsInstance, config)
+    var mq = new MQ(config)
 
     mq.connect()
+    .then((error) => {
+      throw error
+    })
     .catch((err) => {
       err.should.have.property('name');
       err.should.have.property('message');
+
       done();
     })
   })
@@ -41,7 +42,7 @@ describe('Channel', function () {
   }
 
   it("Should create a new channel", function (done) {
-    var mq = new MQ(eventsInstance, config)
+    var mq = new MQ(config)
 
     mq.connect()
     .then((connection) => {

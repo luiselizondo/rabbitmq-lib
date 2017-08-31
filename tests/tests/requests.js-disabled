@@ -11,7 +11,7 @@ describe('Requests', function () {
 
   it("Should be able to send a requests, answer it and respond to it", function (done) {
     var eventsInstance = new Events();
-    var mq = new MQ(eventsInstance, config)
+    var mq = new MQ(config)
 
     var queueName = 'someEventOnQueue4';
 

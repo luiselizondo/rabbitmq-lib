@@ -1,7 +1,5 @@
 var should = require('should')
 var MQ = require('../../index')
-var EventEmitter = require('events');
-class Events extends EventEmitter {}
 
 describe('Queue', function () {
   var config = {
@@ -10,19 +8,18 @@ describe('Queue', function () {
   }
 
   it("Should be able to publish an object to a topic and listen to it", function (done) {
-    var eventsInstance = new Events();
-    var mq = new MQ(eventsInstance, config)
+    var mq = new MQ(config)
 
     var queueName = 'someEventOnQueue2';
 
-    eventsInstance.on(queueName, function (data) {
+    mq.on(queueName, function (data) {
       data.should.have.property('message', 'testing queues')
       done();
     })
 
     mq.connect()
     .then((connection) => {
-      return mq.consumeFromQueue([queueName])
+      return mq.consumeFromQueues([queueName])
     })
     .then((connection) => {
       return mq.dispatchToQueue(queueName, {
