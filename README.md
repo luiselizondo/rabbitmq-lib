@@ -3,10 +3,6 @@
 # Usage
 
 ```
-var EventEmitter = require('events');
-class MyEmitter extends EventEmitter {}
-var eventsInstance = new MyEmitter();
-
 var MQ = require('rabbitmq-lib');
 
 var config = {
@@ -14,7 +10,7 @@ var config = {
   url: amqp://username:pass@localhost:port/
 }
 
-var mq = new MQ(eventsInstance, config)
+var mq = new MQ(config)
 
 mq.connect()
 .then(() => {
@@ -27,7 +23,7 @@ mq.connect()
   console.log(err)
 })
 
-mq.emit('someEvent', objectWithData)
+mq.publish('someEvent', objectWithData)
 mq.dispatchToQueue('queueName', objectWithData)
 ```
 
