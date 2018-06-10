@@ -26,7 +26,6 @@ describe('Topics', function () {
         message: 'The water is cold'
       })
     })
-    .catch(done)
   })
 
   it("Should be able to publish a string to a topic and listen to it but not receive what it's expected", function (done) {
@@ -46,7 +45,6 @@ describe('Topics', function () {
     .then((connection) => {
       return mq.publishToTopic(eventName, {message: 'The water is cold'})
     })
-    .catch(done)
   })
 
   it("Should be able to publish an object to a topic and listen to it", function (done) {
@@ -71,6 +69,5 @@ describe('Topics', function () {
         accountId: '123'
       })
     })
-    .catch(done)
   });
 })

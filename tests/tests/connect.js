@@ -7,18 +7,16 @@ describe("RabbitMQ Connection", function () {
     url: 'amqp://rabbitmq:rabbitmq@localhost:35672/'
   }
 
-  it("Should connect to RabbitMQ", function (done) {
+  it("Should connect to RabbitMQ", function () {
     var mq = new MQ(config)
 
     mq.connect()
     .then((connection) => {
       connection.should.be.an.Object;
-      done()
     })
-    .catch(done)
   });
 
-  it("Should throw an error when passing an invalid connection", function (done) {
+  it("Should throw an error when passing an invalid connection", function () {
     config.url = 'amqp://rabbitmq:nopass@localhost:35672/'
     var mq = new MQ(config)
 
@@ -29,8 +27,6 @@ describe("RabbitMQ Connection", function () {
     .catch((err) => {
       err.should.have.property('name');
       err.should.have.property('message');
-
-      done();
     })
   })
 })
@@ -41,7 +37,7 @@ describe('Channel', function () {
     url: 'amqp://rabbitmq:rabbitmq@localhost:35672/'
   }
 
-  it("Should create a new channel", function (done) {
+  it("Should create a new channel", function () {
     var mq = new MQ(config)
 
     mq.connect()
@@ -51,8 +47,6 @@ describe('Channel', function () {
     .then((channel) => {
       channel.should.be.an.Object;
       channel.should.have.property('ch', 1);
-      done()
     })
-    .catch(done)
   })
 })

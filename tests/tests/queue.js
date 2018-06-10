@@ -7,14 +7,13 @@ describe('Queue', function () {
     url: 'amqp://rabbitmq:rabbitmq@localhost:35672/'
   }
 
-  it("Should be able to publish an object to a topic and listen to it", function (done) {
+  it("Should be able to publish an object to a topic and listen to it", function () {
     var mq = new MQ(config)
 
     var queueName = 'someEventOnQueue2';
 
     mq.on(queueName, function (data) {
       data.should.have.property('message', 'testing queues')
-      done();
     })
 
     mq.connect()
@@ -26,6 +25,5 @@ describe('Queue', function () {
         message: 'testing queues'
       })
     })
-    .catch(done)
   })
 })
