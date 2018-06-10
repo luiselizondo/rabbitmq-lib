@@ -28,3 +28,5 @@ mq.dispatchToQueue('queueName', objectWithData)
 ```
 
 RabbitMQ will trigger an event using the instance passed in the constructor, you have to listen to events on that same instance.
+
+For sending RPC events, use the RPC library
