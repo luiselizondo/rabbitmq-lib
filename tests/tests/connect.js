@@ -1,5 +1,5 @@
 var should = require('should')
-var MQ = require('../../index')
+var MQ = require('../../index').MQ
 
 describe("RabbitMQ Connection", function () {
   var config = {
@@ -42,7 +42,7 @@ describe('Channel', function () {
 
     mq.connect()
     .then((connection) => {
-      return mq._createChannel()
+      return mq.createChannel()
     })
     .then((channel) => {
       channel.should.be.an.Object;
