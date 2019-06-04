@@ -3,6 +3,8 @@ RabbitMQ Lib abstract 3 common uses of RMQ in a very simple API you can use to s
 
 Currently it supports Queues, Topics (publish/subscribe) and RPC.
 
+This version also supports delayed message queues using the rabbitmq-delayed-message-exchange plugin.
+
 On Version 2 we made a major rewrite of the module to better handle connections and channels and reuse them as much as possible.
 
 I also split all the functionality in multiple classes you can use without having to load the whole library.
