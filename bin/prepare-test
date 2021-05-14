@@ -43,3 +43,5 @@ else
   createRabbitContainer
   sleep 5
 fi
+
+sleep 10
