@@ -43,5 +43,3 @@ else
   createRabbitContainer
   sleep 5
 fi
-
-npm test
