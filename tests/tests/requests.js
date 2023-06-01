@@ -22,7 +22,7 @@ describe('RPC Error', function () {
 describe('Requests', function () {
   var config = {
     exchange_name: 'rabbitmq_lib_test',
-    url: 'amqp://rabbitmq:rabbitmq@localhost:35672/'
+    url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/'
   }
 
   var mq1 = new MQ(config)

@@ -4,7 +4,7 @@ var MQ = require('../../index').MQ
 describe("RabbitMQ Connection", function () {
   var config = {
     exchange_name: 'rabbitmq_lib_test',
-    url: 'amqp://rabbitmq:rabbitmq@localhost:35672/'
+    url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/'
   }
 
   it("Should connect to RabbitMQ", function () {
@@ -17,7 +17,7 @@ describe("RabbitMQ Connection", function () {
   });
 
   it("Should throw an error when passing an invalid connection", function () {
-    config.url = 'amqp://rabbitmq:nopass@localhost:35672/'
+    config.url = 'amqp://rabbitmq:nopass@rabbitmq:5672/'
     var mq = new MQ(config)
 
     mq.connect()
@@ -34,7 +34,7 @@ describe("RabbitMQ Connection", function () {
 describe('Channel', function () {
   var config = {
     exchange_name: 'rabbitmq_lib_test',
-    url: 'amqp://rabbitmq:rabbitmq@localhost:35672/'
+    url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/'
   }
 
   it("Should create a new channel", function () {
