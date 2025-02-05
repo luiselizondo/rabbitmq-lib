@@ -5,7 +5,9 @@ var Topic = require('../../index').Topic
 describe('Topics', function () {
   var config = {
     exchangeName: 'rabbitmq_lib_test',
-    url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/'
+    url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/',
+    connectMaxAttempts: 1,
+    connectDelayMS: 100,
   }
 
   var mq1 = new MQ(config)

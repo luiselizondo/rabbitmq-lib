@@ -6,7 +6,9 @@ var EventEmitter = require('events')
 describe('Queue Send', function () {
   var config = {
     exchange_name: 'rabbitmq_lib_test',
-    url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/'
+    url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/',
+    connectMaxAttempts: 1,
+    connectDelayMS: 100,
   }
   
   var mq1 = new MQ(config)
