@@ -26,6 +26,6 @@
   },
   "devDependencies": {
     "should": "^11.2.1",
-    "mocha": "^5.2.0"
+    "mocha": "^11.1.0"
   }
 }
