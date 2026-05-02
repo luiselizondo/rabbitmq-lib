@@ -22,7 +22,7 @@
   "homepage": "https://github.com/luiselizondo/rabbitmq-lib#readme",
   "dependencies": {
     "amqplib": "^0.10.3",
-    "uuid": "^9.0.0"
+    "uuid": "^14.0.0"
   },
   "devDependencies": {
     "should": "^11.2.1",
