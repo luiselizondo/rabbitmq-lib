@@ -1,0 +1,61 @@
+#!/bin/bash
+# Runs the rabbitmq-lib test suite against a live RabbitMQ container.
+#
+# The suite connects to amqp://rabbitmq:rabbitmq@rabbitmq:5672/, so the
+# broker container is reachable under the hostname "rabbitmq".
+
+RABBIT_CONTAINER_NAME=rabbitmq_lib_test
+
+function createRabbitContainer() {
+  docker run -d --name ${RABBIT_CONTAINER_NAME} \
+    -e RABBITMQ_DEFAULT_USER=rabbitmq \
+    -e RABBITMQ_DEFAULT_PASS=rabbitmq \
+    -e RABBITMQ_DEFAULT_VHOST=/ \
+    --hostname rabbitmq \
+    rabbitmq:3.13-alpine
+}
+
+function startRabbitContainer() {
+  docker start ${RABBIT_CONTAINER_NAME}
+}
+
+function rabbitContainerIsRunning() {
+  status=$(docker ps --filter name=${RABBIT_CONTAINER_NAME} -q)
+  if [[ -n $status ]]; then
+    echo "running"
+  else
+    exists=$(docker ps --filter name=${RABBIT_CONTAINER_NAME} -qa)
+    if [[ -n $exists ]]; then
+      echo "exists-but-is-stopped"
+    else
+      echo "does-not-exist"
+    fi
+  fi
+}
+
+rabbitContainerStatus=$(rabbitContainerIsRunning)
+
+if [[ "${rabbitContainerStatus}" = "running" ]]; then
+  echo "The rabbit container is running, doing nothing"
+elif [[ "${rabbitContainerStatus}" = "exists-but-is-stopped" ]]; then
+  echo "The rabbit container exists but is stopped, starting it"
+  startRabbitContainer
+else
+  echo "The rabbit container is not running, starting a new RabbitMQ container using Docker"
+  createRabbitContainer
+fi
+
+if [ ! -d "node_modules" ]; then
+  echo "Installing dependencies"
+  docker run --rm -v ${PWD}:/app -w /app rever/node:22 npm install
+fi
+
+echo "Waiting for the broker to accept connections"
+sleep 8
+
+echo "Running the test suite in a container (linked to the broker as 'rabbitmq')"
+docker run --rm --name rabbitmq_lib_test_runner \
+  --link ${RABBIT_CONTAINER_NAME}:rabbitmq \
+  -v ${PWD}:/app -w /app \
+  -e "NODE_ENV=test" \
+  rever/node:22 npm test

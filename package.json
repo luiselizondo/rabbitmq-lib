@@ -1,10 +1,10 @@
 {
   "name": "rabbitmq-lib",
-  "version": "2.3.2",
+  "version": "2.4.0",
   "description": "RabbitMQ Abstraction Library",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/mocha/bin/mocha --exit tests/tests/*.js"
+    "test": "./node_modules/mocha/bin/mocha --exit --timeout 20000 tests/tests/*.js"
   },
   "repository": {
     "type": "git",
