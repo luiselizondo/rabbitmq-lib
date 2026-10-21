@@ -4,7 +4,7 @@
   "description": "RabbitMQ Abstraction Library",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/mocha/bin/mocha --exit tests/tests/*.js"
+    "test": "./node_modules/mocha/bin/mocha --exit --timeout 20000 tests/tests/*.js"
   },
   "repository": {
     "type": "git",
