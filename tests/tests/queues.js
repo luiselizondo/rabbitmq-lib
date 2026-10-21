@@ -115,6 +115,25 @@ describe('Queue Send', function () {
   })
 })
 
+describe('frameMax negotiation', function () {
+  it('Should negotiate frameMax from the connection URL query', async function () {
+    var mq = new MQ({
+      exchange_name: 'rabbitmq_lib_test',
+      url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/',
+      connectMaxAttempts: 1,
+      connectDelayMS: 100,
+    })
+
+    var connection = await mq.connect()
+    // RabbitMQ 4.x rejects anything below 8192: if the URL-based frameMax
+    // were not applied, the negotiated value would stay 4096 and this
+    // assertion (and the connection itself) would fail. The negotiated
+    // value lives on the internal connection object.
+    connection.connection.frameMax.should.be.aboveOrEqual(8192)
+    await mq.disconnect()
+  })
+});
+
 describe('Queue listenManual', function () {
   this.timeout(20000)
 
@@ -251,6 +270,30 @@ describe('Queue listenManual', function () {
     received.should.have.lengthOf(2)
     received.should.containEql('null options')
     received.should.containEql('no options')
+  });
+
+  it('Should contain acknowledgement failures when the channel closes mid-task', async function () {
+    var pair = await createQueuePair()
+    var consumer = pair.consumer
+    var sender = pair.sender
+
+    var queueName = 'manualClosedChannel'
+    await consumer.channel.deleteQueue(queueName)
+
+    var unhandledRejection = 'none'
+    var onUnhandled = function (err) { unhandledRejection = err }
+    process.on('unhandledRejection', onUnhandled)
+
+    // the channel closes while the task runs: the ack that follows throws
+    await consumer.listenManual(queueName, async function () {
+      await consumer.channel.close()
+    }, { globalPrefetch: true })
+
+    await sender.send(queueName, { message: 'task during channel close' })
+    await new Promise(function (resolve) { setTimeout(resolve, 300) })
+
+    process.removeListener('unhandledRejection', onUnhandled)
+    unhandledRejection.should.equal('none')
   });
 
   it('Should drop a failed task by default (onFailure ack) and keep processing the queue', async function () {
