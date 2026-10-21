@@ -225,6 +225,34 @@ describe('Queue listenManual', function () {
     order[1].should.equal('low priority')
   })
 
+  it('Should deliver a message when sendOptions is null (default options apply)', async function () {
+    var pair = await createQueuePair()
+    var consumer = pair.consumer
+    var sender = pair.sender
+
+    var queueName = 'manualNullSendOptions'
+    await consumer.channel.deleteQueue(queueName)
+
+    // the sender re-asserts the queue on send: its options must match the
+    // consumer's x-max-priority declaration or the broker 406s
+    sender.queueOptions = { durable: true, arguments: { 'x-max-priority': 10 } }
+
+    var received = []
+    await consumer.listenManual(queueName, async function (data) {
+      received.push(data.message)
+    }, { queueArguments: { 'x-max-priority': 10 } })
+
+    // explicit null for sendOptions must not crash - default options apply
+    await sender.send(queueName, { message: 'null options' }, 0, null)
+    await sender.send(queueName, { message: 'no options' })
+
+    await new Promise(function (resolve) { setTimeout(resolve, 300) })
+
+    received.should.have.lengthOf(2)
+    received.should.containEql('null options')
+    received.should.containEql('no options')
+  });
+
   it('Should drop a failed task by default (onFailure ack) and keep processing the queue', async function () {
     var pair = await createQueuePair()
     var consumer = pair.consumer
