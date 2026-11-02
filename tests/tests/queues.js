@@ -424,3 +424,79 @@ describe('Queue listenManual', function () {
     maxPerQueue[queueName2].should.equal(1)
   })
 })
+
+describe('Queue listen failure containment', function () {
+  this.timeout(20000)
+
+  const config = {
+    exchange_name: 'rabbitmq_lib_test',
+    url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/?frameMax=131072',
+    connectMaxAttempts: 1,
+    connectDelayMS: 100,
+  }
+
+  const mqConsumer = new MQ(config)
+
+  const delay = function (ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms)
+    })
+  }
+
+  before(async function () {
+    await mqConsumer.connect()
+    return
+  })
+
+  after(async function () {
+    return await mqConsumer.disconnect()
+  })
+
+  it('Should emit failed and ack a non-JSON message instead of throwing out of the consumer', async function () {
+    const consumer = new Queue()
+    const channel = await mqConsumer.createChannel()
+    consumer.setChannel(channel)
+
+    const queueName = 'listenNonJsonTest'
+    // queues are durable and survive on the shared broker between runs, start clean
+    await channel.deleteQueue(queueName)
+
+    let unhandledRejection = 'none'
+    const onUnhandled = function (err) { unhandledRejection = err }
+    process.on('unhandledRejection', onUnhandled)
+
+    const failures = []
+    consumer.on('failed', function (info) {
+      failures.push(info)
+    })
+
+    const received = []
+    consumer.on('queueEventReceived', function (info) {
+      if (info.name === queueName) received.push(info.data.message)
+    })
+
+    await consumer.listen([queueName])
+
+    // raw, non-JSON content published straight onto the channel: JSON.parse
+    // inside the consumer throws
+    channel.sendToQueue(queueName, Buffer.from('this is not json'))
+
+    await delay(300)
+
+    failures.length.should.equal(1)
+    failures[0].should.have.property('queueName', queueName)
+    failures[0].should.have.property('error')
+    failures[0].error.should.be.an.instanceOf(Error)
+
+    // the channel is still alive and the failed message was acked: a valid
+    // message published afterwards is processed instead of being stuck behind
+    // an unacked one
+    channel.sendToQueue(queueName, Buffer.from(JSON.stringify({ message: 'after failure' })))
+
+    await delay(300)
+
+    process.removeListener('unhandledRejection', onUnhandled)
+    unhandledRejection.should.equal('none')
+    received.should.eql(['after failure'])
+  })
+})

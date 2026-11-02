@@ -1,10 +1,11 @@
 {
   "name": "rabbitmq-lib",
-  "version": "2.4.0",
+  "version": "3.0.0",
   "description": "RabbitMQ Abstraction Library",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/mocha/bin/mocha --exit --timeout 20000 tests/tests/*.js"
+    "test": "mocha --exit --timeout 20000 tests/tests/*.js",
+    "lint": "eslint lib tests"
   },
   "repository": {
     "type": "git",
@@ -13,19 +14,20 @@
   "author": "Luis Elizondo",
   "license": "MIT",
   "engines": {
-    "node": ">=8.0.0"
+    "node": ">=22"
   },
-  "engineStrict": true,
   "bugs": {
     "url": "https://github.com/luiselizondo/rabbitmq-lib/issues"
   },
   "homepage": "https://github.com/luiselizondo/rabbitmq-lib#readme",
   "dependencies": {
-    "amqplib": "^0.10.3",
-    "uuid": "^9.0.0"
+    "amqplib": "^0.10",
+    "uuid": "^11"
   },
   "devDependencies": {
-    "should": "^11.2.1",
-    "mocha": "^5.2.0"
+    "@eslint/js": "^9",
+    "eslint": "^9",
+    "mocha": "^11",
+    "should": "^13"
   }
 }
