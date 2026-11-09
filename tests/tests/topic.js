@@ -196,3 +196,61 @@ function wait (time) {
     }, time)
   })
 }
+
+describe('Topic listener containment', function () {
+  var config = {
+    exchange_name: 'rabbitmq_lib_test',
+    url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/',
+    connectMaxAttempts: 1,
+    connectDelayMS: 100,
+  }
+
+  var mq1 = new MQ(config)
+  var mq2 = new MQ(config)
+
+  var listener = new Topic('listenerContainmentTopic')
+  var publisher = new Topic('listenerContainmentTopic')
+  var failures = []
+  var received = []
+  var eventName = 'listenerContainmentEvent'
+
+  before(async function () {
+    failures = []
+    received = []
+    await mq1.connect()
+    listener.setChannel(await mq1.createChannel())
+    await mq2.connect()
+    publisher.setChannel(await mq2.createChannel())
+
+    listener.on(eventName, function () {
+      throw new Error('topic listener boom')
+    })
+    listener.on('failed', (failure) => failures.push(failure))
+    await listener.listen([eventName])
+  })
+
+  after(async function () {
+    await mq1.disconnect()
+    await mq2.disconnect()
+  })
+
+  it('Should contain a throwing listener: failed emitted, consumer alive', async function () {
+    await publisher.publish(eventName, { name: 'boom message' })
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    failures.length.should.be.equal(1)
+    failures[0].should.have.property('eventName', eventName)
+    failures[0].error.should.be.an.Error()
+    failures[0].error.message.should.match(/topic listener boom/)
+  })
+
+  it('Should keep consuming after a throwing listener', async function () {
+    listener.removeAllListeners(eventName)
+    listener.on(eventName, (data) => received.push(data))
+    await publisher.publish(eventName, { name: 'healthy message' })
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    received.length.should.be.equal(1)
+    received[0].should.have.property('name', 'healthy message')
+  })
+})

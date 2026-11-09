@@ -500,3 +500,63 @@ describe('Queue listen failure containment', function () {
     received.should.eql(['after failure'])
   })
 })
+
+describe('Queue listener containment', function () {
+  var config = {
+    exchange_name: 'rabbitmq_lib_test',
+    url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/',
+    connectMaxAttempts: 1,
+    connectDelayMS: 100,
+  }
+
+  var mq1 = new MQ(config)
+  var mq2 = new MQ(config)
+
+  var queue = new Queue()
+  var sender = new Queue()
+  var failures = []
+  var processed = []
+  var queueName = 'listenerContainmentTest'
+  var eventName = 'listenerContainmentTest'
+
+  before(async function () {
+    failures = []
+    processed = []
+    await mq1.connect()
+    queue.setChannel(await mq1.createChannel())
+    await mq2.connect()
+    sender.setChannel(await mq2.createChannel())
+
+    queue.on(eventName, function () {
+      throw new Error('listener boom')
+    })
+    queue.on('failed', (failure) => failures.push(failure))
+    await queue.listen([queueName])
+  })
+
+  after(async function () {
+    await queue.channel.deleteQueue(queueName)
+    await mq1.disconnect()
+    await mq2.disconnect()
+  })
+
+  it('Should contain a throwing listener: failed emitted, message consumed, no crash', async function () {
+    await sender.send(queueName, { name: 'boom message' })
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    failures.length.should.be.equal(1)
+    failures[0].should.have.property('queueName', queueName)
+    failures[0].error.should.be.an.Error()
+    failures[0].error.message.should.match(/listener boom/)
+  })
+
+  it('Should keep consuming after a throwing listener', async function () {
+    queue.removeAllListeners(eventName)
+    queue.on(eventName, (data) => processed.push(data))
+    await sender.send(queueName, { name: 'healthy message' })
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    processed.length.should.be.equal(1)
+    processed[0].should.have.property('name', 'healthy message')
+  })
+})
