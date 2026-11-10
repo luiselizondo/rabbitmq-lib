@@ -21,7 +21,11 @@ describe('Queue Send', function () {
   })
 
   after(async function () {
-    return await mq.disconnect()
+    // The before hook may have failed to connect (e.g. broker not ready):
+    // only disconnect when there is something to disconnect from.
+    if (mq.connection) {
+      return await mq.disconnect()
+    }
   })
 
   it('Should be able to send a message to a queue and receive it', async function () {
