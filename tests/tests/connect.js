@@ -1,4 +1,4 @@
-const should = require('should')
+const { expect } = require('chai')
 const MQ = require('../../index').MQ
 
 describe('RabbitMQ Connection', function () {
@@ -12,7 +12,7 @@ describe('RabbitMQ Connection', function () {
 
     return mq.connect()
       .then((connection) => {
-        connection.should.be.an.Object()
+        expect(connection).to.be.an('object')
       })
   })
 
@@ -37,8 +37,8 @@ describe('RabbitMQ Connection', function () {
       rejection = err
     }
 
-    should(rejection).be.an.Error()
-    should(emitted).be.an.Error()
+    expect(rejection).to.be.an('error')
+    expect(emitted).to.be.an('error')
   })
 })
 
@@ -46,25 +46,25 @@ describe('MQ URL normalization', function () {
   it('Should append the default frameMax when the URL does not set one', function () {
     const mq = new MQ({ url: 'amqp://u:p@rabbitmq:5672/' })
 
-    mq.RABBITMQ_URL.should.containEql('frameMax=131072')
-    mq.connectionOptions.should.eql({ servername: 'rabbitmq', heartbeat: 10 })
+    expect(mq.RABBITMQ_URL).to.include('frameMax=131072')
+    expect(mq.connectionOptions).to.eql({ servername: 'rabbitmq', heartbeat: 10 })
   })
 
   it('Should keep an existing frameMax and not duplicate the parameter', function () {
     const mq = new MQ({ url: 'amqp://u:p@rabbitmq:5672/?frameMax=65536' })
 
-    mq.RABBITMQ_URL.should.containEql('frameMax=65536')
-    mq.RABBITMQ_URL.should.not.containEql('frameMax=131072')
+    expect(mq.RABBITMQ_URL).to.include('frameMax=65536')
+    expect(mq.RABBITMQ_URL).to.not.include('frameMax=131072')
     const matches = mq.RABBITMQ_URL.match(/frameMax=/g) || []
-    matches.length.should.equal(1)
+    expect(matches.length).to.equal(1)
   })
 
   it('Should preserve the other query parameters', function () {
     const mq = new MQ({ url: 'amqp://u:p@rabbitmq:5672/?heartbeat=5&locale=en_US' })
 
-    mq.RABBITMQ_URL.should.containEql('heartbeat=5')
-    mq.RABBITMQ_URL.should.containEql('locale=en_US')
-    mq.RABBITMQ_URL.should.containEql('frameMax=131072')
+    expect(mq.RABBITMQ_URL).to.include('heartbeat=5')
+    expect(mq.RABBITMQ_URL).to.include('locale=en_US')
+    expect(mq.RABBITMQ_URL).to.include('frameMax=131072')
   })
 })
 
@@ -80,8 +80,8 @@ describe('Channel', function () {
     return mq.connect()
       .then(() => mq.createChannel())
       .then((channel) => {
-        channel.should.be.an.Object()
-        channel.should.have.property('ch', 1)
+        expect(channel).to.be.an('object')
+        expect(channel).to.have.property('ch', 1)
       })
   })
 })

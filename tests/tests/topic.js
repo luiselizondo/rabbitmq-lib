@@ -1,4 +1,4 @@
-const should = require('should')
+const { expect } = require('chai')
 const MQ = require('../../index').MQ
 const Topic = require('../../index').Topic
 
@@ -36,14 +36,14 @@ describe('Topics', function () {
       const eventName = 'someEvent'
 
       topic.once(eventName, function (data) {
-        data.message.should.equal('The water is cold')
+        expect(data.message).to.equal('The water is cold')
       })
 
       topic.once('topicEventReceived', function (data) {
-        data.should.have.property('name', 'someEvent')
-        data.should.have.property('type', 'topic')
-        data.should.have.property('data')
-        data.data.should.have.property('message', 'The water is cold')
+        expect(data).to.have.property('name', 'someEvent')
+        expect(data).to.have.property('type', 'topic')
+        expect(data).to.have.property('data')
+        expect(data.data).to.have.property('message', 'The water is cold')
       })
 
       await topic.listen(eventName)
@@ -52,7 +52,7 @@ describe('Topics', function () {
         message: 'The water is cold',
       })
     } catch (err) {
-      should.not.exist(err)
+      expect(err).to.not.exist
     }
   })
 
@@ -61,7 +61,7 @@ describe('Topics', function () {
       const eventName = 'someEvent1'
 
       topic.once('someEvent1', function (data) {
-        data.should.have.property('message', 'The water maybe is cold')
+        expect(data).to.have.property('message', 'The water maybe is cold')
       })
 
       await topic.listen(eventName)
@@ -70,7 +70,7 @@ describe('Topics', function () {
         message: 'The water maybe is cold',
       })
     } catch (err) {
-      should.not.exist(err)
+      expect(err).to.not.exist
     }
   })
 
@@ -79,15 +79,15 @@ describe('Topics', function () {
     const eventName1 = 'someOtherDataEvent'
 
     topic.once(eventName, function (data) {
-      data.should.have.property('message', 'The water is cold')
-      data.should.have.property('accountId', '123')
-      data.should.have.property('tid')
+      expect(data).to.have.property('message', 'The water is cold')
+      expect(data).to.have.property('accountId', '123')
+      expect(data).to.have.property('tid')
     })
 
     topic.once(eventName1, function (data) {
-      data.should.have.property('message', 'The water is not cold')
-      data.should.have.property('accountId', '234')
-      data.should.have.property('tid')
+      expect(data).to.have.property('message', 'The water is not cold')
+      expect(data).to.have.property('accountId', '234')
+      expect(data).to.have.property('tid')
     })
 
     const events = [eventName, eventName1]
@@ -123,19 +123,19 @@ describe('Topics', function () {
     await topic.listen(eventName)
     await sender.publish(eventName, msg)
 
-    msg.should.deepEqual({ a: 1 })
-    should.not.exist(msg.tid)
+    expect(msg).to.deep.equal({ a: 1 })
+    expect(msg.tid).to.not.exist
 
     const data = await received
-    data.should.have.property('a', 1)
-    data.tid.should.be.a.String()
+    expect(data).to.have.property('a', 1)
+    expect(data.tid).to.be.a('string')
 
     const payload = await sentPayload
-    payload.should.have.property('type', 'topic')
-    payload.should.have.property('eventName', eventName)
-    payload.message.should.have.property('a', 1)
-    payload.message.tid.should.be.a.String()
-    payload.message.should.not.equal(msg)
+    expect(payload).to.have.property('type', 'topic')
+    expect(payload).to.have.property('eventName', eventName)
+    expect(payload.message).to.have.property('a', 1)
+    expect(payload.message.tid).to.be.a('string')
+    expect(payload.message).to.not.equal(msg)
   })
 
   it('should contain non-JSON payloads and emit failed (flag 15)', async function () {
@@ -167,13 +167,13 @@ describe('Topics', function () {
       )
 
       const payload = await failedPayload
-      payload.should.have.property('eventName', eventName)
-      payload.should.have.property('error')
-      payload.error.should.be.instanceOf(Error)
+      expect(payload).to.have.property('eventName', eventName)
+      expect(payload).to.have.property('error')
+      expect(payload.error).to.be.an.instanceOf(Error)
 
       // give any escaped rejection a chance to surface
       await wait(500)
-      unhandled.should.have.length(0)
+      expect(unhandled).to.have.lengthOf(0)
     } finally {
       process.removeListener('unhandledRejection', onUnhandled)
     }
@@ -229,10 +229,10 @@ describe('Topic listener containment', function () {
     await publisher.publish(eventName, { name: 'boom message' })
     await new Promise((resolve) => setTimeout(resolve, 500))
 
-    failures.length.should.be.equal(1)
-    failures[0].should.have.property('eventName', eventName)
-    failures[0].error.should.be.an.Error()
-    failures[0].error.message.should.match(/topic listener boom/)
+    expect(failures.length).to.equal(1)
+    expect(failures[0]).to.have.property('eventName', eventName)
+    expect(failures[0].error).to.be.an('error')
+    expect(failures[0].error.message).to.match(/topic listener boom/)
   })
 
   it('Should keep consuming after a throwing listener', async function () {
@@ -241,7 +241,7 @@ describe('Topic listener containment', function () {
     await publisher.publish(eventName, { name: 'healthy message' })
     await new Promise((resolve) => setTimeout(resolve, 500))
 
-    received.length.should.be.equal(1)
-    received[0].should.have.property('name', 'healthy message')
+    expect(received.length).to.equal(1)
+    expect(received[0]).to.have.property('name', 'healthy message')
   })
 })

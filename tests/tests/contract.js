@@ -1,4 +1,4 @@
-const should = require('should')
+const { expect } = require('chai')
 const EventEmitter = require('events')
 
 const lib = require('../../index')
@@ -12,7 +12,7 @@ describe('public contract', function () {
   }
 
   it('exports exactly MQ, Queue, RPC and Topic', function () {
-    Object.keys(lib).sort().should.eql(['MQ', 'Queue', 'RPC', 'Topic'])
+    expect(Object.keys(lib).sort()).to.eql(['MQ', 'Queue', 'RPC', 'Topic'])
   })
 
   Object.keys(classes).forEach(function (name) {
@@ -20,18 +20,18 @@ describe('public contract', function () {
       const Constructor = lib[name]
 
       it('is a class extending EventEmitter', function () {
-        should(Constructor).be.a.Function()
-        Constructor.prototype.should.be.instanceof(EventEmitter)
-        Constructor.prototype.constructor.should.equal(Constructor)
+        expect(Constructor).to.be.a('function')
+        expect(Constructor.prototype).to.be.an.instanceOf(EventEmitter)
+        expect(Constructor.prototype.constructor).to.equal(Constructor)
       })
 
       it('declares its constructor with arity 1', function () {
-        Constructor.length.should.equal(1)
+        expect(Constructor.length).to.equal(1)
       })
 
       it('exposes its prototype methods', function () {
         classes[name].forEach(function (method) {
-          Constructor.prototype[method].should.be.a.Function()
+          expect(Constructor.prototype[method]).to.be.a('function')
         })
       })
     })
@@ -41,8 +41,8 @@ describe('public contract', function () {
     it('applies the default expiration and persistent options', function () {
       const rpc = new lib.RPC()
 
-      rpc.options.expiration.should.equal('5000')
-      rpc.options.persistent.should.equal(false)
+      expect(rpc.options.expiration).to.equal('5000')
+      expect(rpc.options.persistent).to.equal(false)
     })
   })
 })

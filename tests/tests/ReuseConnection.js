@@ -1,4 +1,4 @@
-const should = require('should')
+const { expect } = require('chai')
 const Queue = require('../../index').Queue
 const MQ = require('../../index').MQ
 const EventEmitter = require('events')
@@ -29,7 +29,7 @@ describe('Queue Send', function () {
       const queueName = 'queueSendMessage'
 
       queue.on(queueName, function (data) {
-        data.should.have.property('message', 'testing queues')
+        expect(data).to.have.property('message', 'testing queues')
       })
 
       const listener = await queue.listen(queueName)
@@ -38,7 +38,7 @@ describe('Queue Send', function () {
         message: 'testing queues',
       })
     } catch (err) {
-      should.not.exist(err)
+      expect(err).to.not.exist
     }
   })
 
@@ -49,10 +49,10 @@ describe('Queue Send', function () {
       queue.on('queueEventReceived', function (data) {
         // it can receive multiple events from other tests
         if (data.name === 'genericEvent') {
-          data.should.have.property('name', 'genericEvent')
-          data.should.have.property('type', 'queue')
-          data.should.have.property('data')
-          data.data.should.have.property('message', 'testing queues')
+          expect(data).to.have.property('name', 'genericEvent')
+          expect(data).to.have.property('type', 'queue')
+          expect(data).to.have.property('data')
+          expect(data.data).to.have.property('message', 'testing queues')
         }
       })
 
@@ -62,7 +62,7 @@ describe('Queue Send', function () {
         message: 'testing queues',
       })
     } catch (err) {
-      should.not.exist(err)
+      expect(err).to.not.exist
     }
   })
 
@@ -73,11 +73,11 @@ describe('Queue Send', function () {
       const queueName2 = 'test__queueTwo.abc'
 
       queue.on(queueName1, function (data) {
-        data.should.have.property('message', 'Queue One')
+        expect(data).to.have.property('message', 'Queue One')
       })
 
       queue.on(queueName2, function (data) {
-        data.should.have.property('message', 'Queue Two')
+        expect(data).to.have.property('message', 'Queue Two')
       })
 
       const queues = ['test__queueOne.abc', 'test__queueTwo.abc']
@@ -91,7 +91,7 @@ describe('Queue Send', function () {
         message: 'Queue Two',
       })
     } catch (err) {
-      should.not.exist(err)
+      expect(err).to.not.exist
     }
   })
 })

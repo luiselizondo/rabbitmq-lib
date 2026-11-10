@@ -1,4 +1,4 @@
-const should = require('should')
+const { expect } = require('chai')
 const MQ = require('../../index').MQ
 const Queue = require('../../index').Queue
 const EventEmitter = require('events')
@@ -38,7 +38,7 @@ describe('Queue Send', function () {
       const queueName = 'queueSendMessage'
 
       queue.once(queueName, function (data) {
-        data.should.have.property('message', 'testing queues')
+        expect(data).to.have.property('message', 'testing queues')
       })
 
       const listener = await queue.listen(queueName)
@@ -47,7 +47,7 @@ describe('Queue Send', function () {
         message: 'testing queues',
       })
     } catch (err) {
-      should.not.exist(err)
+      expect(err).to.not.exist
     }
   })
 
@@ -58,10 +58,10 @@ describe('Queue Send', function () {
       queue.on('queueEventReceived', function (data) {
         // it can receive multiple events from other tests
         if (data.name === 'genericEvent') {
-          data.should.have.property('name', 'genericEvent')
-          data.should.have.property('type', 'queue')
-          data.should.have.property('data')
-          data.data.should.have.property('message', 'testing queues')
+          expect(data).to.have.property('name', 'genericEvent')
+          expect(data).to.have.property('type', 'queue')
+          expect(data).to.have.property('data')
+          expect(data.data).to.have.property('message', 'testing queues')
         }
       })
 
@@ -71,7 +71,7 @@ describe('Queue Send', function () {
         message: 'testing queues',
       })
     } catch (err) {
-      should.not.exist(err)
+      expect(err).to.not.exist
     }
   })
 
@@ -82,11 +82,11 @@ describe('Queue Send', function () {
       const queueName2 = 'test__queueTwo.abc'
 
       queue.once(queueName1, function (data) {
-        data.should.have.property('message', 'Queue One')
+        expect(data).to.have.property('message', 'Queue One')
       })
 
       queue.once(queueName2, function (data) {
-        data.should.have.property('message', 'Queue Two')
+        expect(data).to.have.property('message', 'Queue Two')
       })
 
       const queues = ['test__queueOne.abc', 'test__queueTwo.abc']
@@ -100,7 +100,7 @@ describe('Queue Send', function () {
         message: 'Queue Two',
       })
     } catch (err) {
-      should.not.exist(err)
+      expect(err).to.not.exist
     }
   })
 })
@@ -119,7 +119,7 @@ describe('frameMax negotiation', function () {
     // were not applied, the negotiated value would stay 4096 and this
     // assertion (and the connection itself) would fail. The negotiated
     // value lives on the internal connection object.
-    connection.connection.frameMax.should.be.aboveOrEqual(8192)
+    expect(connection.connection.frameMax).to.be.at.least(8192)
     await mq.disconnect()
   })
 })
@@ -191,11 +191,11 @@ describe('Queue listenManual', function () {
 
     await delay(500)
 
-    received.length.should.equal(2)
-    received[0].should.have.property('message', 'first')
-    received[0].should.have.property('redelivered', false)
-    received[1].should.have.property('message', 'second')
-    received[1].should.have.property('redelivered', false)
+    expect(received).to.have.lengthOf(2)
+    expect(received[0]).to.have.property('message', 'first')
+    expect(received[0]).to.have.property('redelivered', false)
+    expect(received[1]).to.have.property('message', 'second')
+    expect(received[1]).to.have.property('redelivered', false)
   })
 
   it('Should deliver messages in priority order when the queue has x-max-priority', async function () {
@@ -243,9 +243,9 @@ describe('Queue listenManual', function () {
 
     await delay(500)
 
-    order.length.should.equal(2)
-    order[0].should.equal('high priority')
-    order[1].should.equal('low priority')
+    expect(order).to.have.lengthOf(2)
+    expect(order[0]).to.equal('high priority')
+    expect(order[1]).to.equal('low priority')
   })
 
   it('Should deliver a message when sendOptions is null (default options apply)', async function () {
@@ -280,9 +280,9 @@ describe('Queue listenManual', function () {
       setTimeout(resolve, 300)
     })
 
-    received.should.have.lengthOf(2)
-    received.should.containEql('null options')
-    received.should.containEql('no options')
+    expect(received).to.have.lengthOf(2)
+    expect(received).to.deep.include('null options')
+    expect(received).to.deep.include('no options')
   })
 
   it('Should contain acknowledgement failures when the channel closes mid-task', async function () {
@@ -314,7 +314,7 @@ describe('Queue listenManual', function () {
     })
 
     process.removeListener('unhandledRejection', onUnhandled)
-    unhandledRejection.should.equal('none')
+    expect(unhandledRejection).to.equal('none')
   })
 
   it('Should drop a failed task by default (onFailure ack) and keep processing the queue', async function () {
@@ -350,11 +350,11 @@ describe('Queue listenManual', function () {
 
     await delay(500)
 
-    received.length.should.equal(1)
-    received[0].should.equal('after failure')
-    failures.length.should.equal(1)
-    failures[0].should.have.property('queueName', queueName)
-    failures[0].error.message.should.equal('handler failed on purpose')
+    expect(received).to.have.lengthOf(1)
+    expect(received[0]).to.equal('after failure')
+    expect(failures).to.have.lengthOf(1)
+    expect(failures[0]).to.have.property('queueName', queueName)
+    expect(failures[0].error.message).to.equal('handler failed on purpose')
   })
 
   it('Should requeue a failed task once when onFailure is requeue and succeed on the redelivered attempt', async function () {
@@ -386,11 +386,11 @@ describe('Queue listenManual', function () {
 
     await delay(500)
 
-    attempts.length.should.equal(2)
-    attempts[0].should.have.property('message', 'requeue me')
-    attempts[0].should.have.property('redelivered', false)
-    attempts[1].should.have.property('message', 'requeue me')
-    attempts[1].should.have.property('redelivered', true)
+    expect(attempts).to.have.lengthOf(2)
+    expect(attempts[0]).to.have.property('message', 'requeue me')
+    expect(attempts[0]).to.have.property('redelivered', false)
+    expect(attempts[1]).to.have.property('message', 'requeue me')
+    expect(attempts[1]).to.have.property('redelivered', true)
   })
 
   it('Should respect a prefetch of one per queue across two queues with globalPrefetch true', async function () {
@@ -447,9 +447,9 @@ describe('Queue listenManual', function () {
     // (channel-wide global qos was removed in 4.0), so each queue processes
     // one message at a time; on RabbitMQ 3.x the same setup also shares the
     // limit across both queues, so at most one message is in flight overall
-    processed.should.equal(4)
-    maxPerQueue[queueName1].should.equal(1)
-    maxPerQueue[queueName2].should.equal(1)
+    expect(processed).to.equal(4)
+    expect(maxPerQueue[queueName1]).to.equal(1)
+    expect(maxPerQueue[queueName2]).to.equal(1)
   })
 })
 
@@ -513,10 +513,10 @@ describe('Queue listen failure containment', function () {
 
     await delay(300)
 
-    failures.length.should.equal(1)
-    failures[0].should.have.property('queueName', queueName)
-    failures[0].should.have.property('error')
-    failures[0].error.should.be.an.instanceOf(Error)
+    expect(failures).to.have.lengthOf(1)
+    expect(failures[0]).to.have.property('queueName', queueName)
+    expect(failures[0]).to.have.property('error')
+    expect(failures[0].error).to.be.an.instanceOf(Error)
 
     // the channel is still alive and the failed message was acked: a valid
     // message published afterwards is processed instead of being stuck behind
@@ -529,8 +529,8 @@ describe('Queue listen failure containment', function () {
     await delay(300)
 
     process.removeListener('unhandledRejection', onUnhandled)
-    unhandledRejection.should.equal('none')
-    received.should.eql(['after failure'])
+    expect(unhandledRejection).to.equal('none')
+    expect(received).to.eql(['after failure'])
   })
 })
 
@@ -577,10 +577,10 @@ describe('Queue listener containment', function () {
     await sender.send(queueName, { name: 'boom message' })
     await new Promise((resolve) => setTimeout(resolve, 500))
 
-    failures.length.should.be.equal(1)
-    failures[0].should.have.property('queueName', queueName)
-    failures[0].error.should.be.an.Error()
-    failures[0].error.message.should.match(/listener boom/)
+    expect(failures).to.have.lengthOf(1)
+    expect(failures[0]).to.have.property('queueName', queueName)
+    expect(failures[0].error).to.be.an('error')
+    expect(failures[0].error.message).to.match(/listener boom/)
   })
 
   it('Should keep consuming after a throwing listener', async function () {
@@ -589,7 +589,7 @@ describe('Queue listener containment', function () {
     await sender.send(queueName, { name: 'healthy message' })
     await new Promise((resolve) => setTimeout(resolve, 500))
 
-    processed.length.should.be.equal(1)
-    processed[0].should.have.property('name', 'healthy message')
+    expect(processed).to.have.lengthOf(1)
+    expect(processed[0]).to.have.property('name', 'healthy message')
   })
 })

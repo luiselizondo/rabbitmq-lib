@@ -1,4 +1,4 @@
-const should = require('should')
+const { expect } = require('chai')
 const MQ = require('../../index').MQ
 const RPC = require('../../index').RPC
 const EventEmitter = require('events')
@@ -13,7 +13,7 @@ describe('RPC Error', function () {
         name: 'Batman',
       })
     } catch (err) {
-      err.should.have.property(
+      expect(err).to.have.property(
         'message',
         'A connection is needed, call setConnection() on the instance once',
       )
@@ -64,10 +64,10 @@ describe('Requests', function () {
       })
 
       const response = JSON.parse(result)
-      response.should.have.property('type', 'success')
-      response.results.should.have.property('message', 'Tested testName')
+      expect(response).to.have.property('type', 'success')
+      expect(response.results).to.have.property('message', 'Tested testName')
     } catch (err) {
-      should.not.exist(err)
+      expect(err).to.not.exist
     }
   })
 
@@ -86,10 +86,10 @@ describe('Requests', function () {
       })
 
       const response = JSON.parse(result)
-      response.should.have.property('type', 'error')
-      response.should.have.property('error', 'No valid request')
+      expect(response).to.have.property('type', 'error')
+      expect(response).to.have.property('error', 'No valid request')
     } catch (err) {
-      should.not.exist(err)
+      expect(err).to.not.exist
     }
   })
 
@@ -108,10 +108,10 @@ describe('Requests', function () {
       })
 
       const response = JSON.parse(result)
-      response.should.have.property('type', 'error')
-      response.should.have.property('error', 'No valid request')
+      expect(response).to.have.property('type', 'error')
+      expect(response).to.have.property('error', 'No valid request')
     } catch (err) {
-      should.not.exist(err)
+      expect(err).to.not.exist
     }
   })
 
@@ -130,10 +130,10 @@ describe('Requests', function () {
       })
 
       const response = JSON.parse(result)
-      response.should.have.property('type', 'error')
-      response.should.have.property('error', 'No data found')
+      expect(response).to.have.property('type', 'error')
+      expect(response).to.have.property('error', 'No data found')
     } catch (err) {
-      should.not.exist(err)
+      expect(err).to.not.exist
     }
   })
 
@@ -156,13 +156,13 @@ describe('Requests', function () {
     })
     const elapsed = Date.now() - startedAt
 
-    should.not.exist(result)
-    elapsed.should.be.below(1000)
+    expect(result).to.not.exist
+    expect(elapsed).to.be.below(1000)
 
-    createdChannels.length.should.equal(1)
+    expect(createdChannels.length).to.equal(1)
     const channel = createdChannels[0]
     channel.responseEmitter.eventNames().forEach(function (eventName) {
-      channel.responseEmitter.listenerCount(eventName).should.equal(0)
+      expect(channel.responseEmitter.listenerCount(eventName)).to.equal(0)
     })
   })
 
@@ -193,13 +193,13 @@ describe('Requests', function () {
       waited += 25
     }
 
-    failures.length.should.equal(1)
-    failures[0].should.have.property('eventName', queueName)
-    failures[0].error.should.be.instanceof(Error)
+    expect(failures.length).to.equal(1)
+    expect(failures[0]).to.have.property('eventName', queueName)
+    expect(failures[0].error).to.be.an.instanceOf(Error)
 
     const result = await sender.send(queueName, { testKey: 'afterFailure' })
     const response = JSON.parse(result)
-    response.should.have.property('type', 'success')
-    response.results.should.have.property('message', 'Contained afterFailure')
+    expect(response).to.have.property('type', 'success')
+    expect(response.results).to.have.property('message', 'Contained afterFailure')
   })
 })
