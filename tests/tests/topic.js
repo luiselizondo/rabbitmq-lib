@@ -31,17 +31,15 @@ describe('Topics', function () {
     return await mq2.disconnect()
   })
 
-  it("Should be able to publish an object with a string to a topic and listen to it", async function () {
+  it('Should be able to publish an object with a string to a topic and listen to it', async function () {
     try {
-      var eventName = 'someEvent';
+      var eventName = 'someEvent'
 
       topic.once(eventName, function (data) {
-        console.log('topic received', data)
         data.message.should.equal('The water is cold')
       })
 
       topic.once('topicEventReceived', function (data) {
-        console.log('general topic received', data)
         data.should.have.property('name', 'someEvent')
         data.should.have.property('type', 'topic')
         data.should.have.property('data')
@@ -51,73 +49,60 @@ describe('Topics', function () {
       await topic.listen(eventName)
 
       await sender.publish(eventName, {
-        message: 'The water is cold'
+        message: 'The water is cold',
       })
-    }
-    catch (err) {
-      console.log('Error', err)
+    } catch (err) {
       should.not.exist(err)
     }
   })
 
-  it("Should be able to publish a string to a topic and listen to the general event", async function () {
+  it('Should be able to publish a string to a topic and listen to the general event', async function () {
     try {
-      var eventName = 'someEvent1';
+      var eventName = 'someEvent1'
 
       topic.once('someEvent1', function (data) {
-        console.log('someEvent1 received', data)
         data.should.have.property('message', 'The water maybe is cold')
       })
 
       await topic.listen(eventName)
 
       await sender.publish(eventName, {
-        message: 'The water maybe is cold'
+        message: 'The water maybe is cold',
       })
-    }
-    catch (err) {
-      console.log('Error', err)
+    } catch (err) {
       should.not.exist(err)
     }
   })
 
-  it("Should be able to publish an object to multiple topics and listen to them", async function () {
-    try {
-      var eventName = 'someDataEvent';
-      var eventName1 = 'someOtherDataEvent';
+  it('Should be able to publish an object to multiple topics and listen to them', async function () {
+    var eventName = 'someDataEvent'
+    var eventName1 = 'someOtherDataEvent'
 
-      topic.once(eventName, function (data) {
-        console.log('First event', data)
-        data.should.have.property('message', 'The water is cold')
-        data.should.have.property('accountId', '123')
-        data.should.have.property('tid')
-      })
+    topic.once(eventName, function (data) {
+      data.should.have.property('message', 'The water is cold')
+      data.should.have.property('accountId', '123')
+      data.should.have.property('tid')
+    })
 
-      topic.once(eventName1, function (data) {
-        console.log('Second event', data)
-        data.should.have.property('message', 'The water is not cold')
-        data.should.have.property('accountId', '234')
-        data.should.have.property('tid')
-      })
+    topic.once(eventName1, function (data) {
+      data.should.have.property('message', 'The water is not cold')
+      data.should.have.property('accountId', '234')
+      data.should.have.property('tid')
+    })
 
-      var events = [eventName, eventName1]
-      await topic.listen(events)
+    var events = [eventName, eventName1]
+    await topic.listen(events)
 
-      await sender.publish(eventName, {
-        message: 'The water is cold',
-        accountId: '123'
-      })
+    await sender.publish(eventName, {
+      message: 'The water is cold',
+      accountId: '123',
+    })
 
-      await sender.publish(eventName1, {
-        message: 'The water is not cold',
-        accountId: '234'
-      })
-    }
-    catch (err) {
-      console.log('Error', err)
-      throw err
-    }
-  });
+    await sender.publish(eventName1, {
+      message: 'The water is not cold',
+      accountId: '234',
+    })
+  })
 
   it('should not mutate the caller message when publishing (flag 3)', async function () {
     const eventName = 'noMutationEvent'
@@ -171,8 +156,15 @@ describe('Topics', function () {
       })
 
       const channel = sender.channel
-      await channel.assertExchange(sender.EXCHANGE_NAME, 'topic', { durable: false })
-      channel.publish(sender.EXCHANGE_NAME, eventName, Buffer.from('not-json{'), { noAck: true })
+      await channel.assertExchange(sender.EXCHANGE_NAME, 'topic', {
+        durable: false,
+      })
+      channel.publish(
+        sender.EXCHANGE_NAME,
+        eventName,
+        Buffer.from('not-json{'),
+        { noAck: true },
+      )
 
       const payload = await failedPayload
       payload.should.have.property('eventName', eventName)
@@ -182,8 +174,7 @@ describe('Topics', function () {
       // give any escaped rejection a chance to surface
       await wait(500)
       unhandled.should.have.length(0)
-    }
-    finally {
+    } finally {
       process.removeListener('unhandledRejection', onUnhandled)
     }
   })

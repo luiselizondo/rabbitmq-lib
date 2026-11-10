@@ -10,13 +10,13 @@ describe('Queue Send', function () {
     connectMaxAttempts: 1,
     connectDelayMS: 100,
   }
-  
+
   var mq1 = new MQ(config)
   var mq2 = new MQ(config)
 
   var queue = new Queue()
   var sender = new Queue()
-  
+
   before(async function () {
     await mq1.connect()
     var channelConsumer = await mq1.createChannel()
@@ -27,41 +27,37 @@ describe('Queue Send', function () {
     sender.setChannel(channelSender)
     return
   })
-  
+
   after(async function () {
     await mq1.disconnect()
     return await mq2.disconnect()
   })
 
-  it("Should be able to send a message to a queue and receive it", async function () {
+  it('Should be able to send a message to a queue and receive it', async function () {
     try {
-      var queueName = 'queueSendMessage';
+      var queueName = 'queueSendMessage'
 
       queue.once(queueName, function (data) {
-        console.log('Message received', data)
         data.should.have.property('message', 'testing queues')
       })
-      
+
       var listener = await queue.listen(queueName)
-      
+
       await sender.send(queueName, {
-        message: 'testing queues'
+        message: 'testing queues',
       })
-    }
-    catch (err) {
-      console.log('Error', err)
+    } catch (err) {
       should.not.exist(err)
     }
   })
 
-  it("Should be able to send a message to a queue and receive a generic event", async function () {
+  it('Should be able to send a message to a queue and receive a generic event', async function () {
     try {
-      var queueName = 'genericEvent';
+      var queueName = 'genericEvent'
 
       queue.on('queueEventReceived', function (data) {
         // it can receive multiple events from other tests
         if (data.name === 'genericEvent') {
-          console.log('Generic message received', data)
           data.should.have.property('name', 'genericEvent')
           data.should.have.property('type', 'queue')
           data.should.have.property('data')
@@ -70,13 +66,11 @@ describe('Queue Send', function () {
       })
 
       var listener = await queue.listen(queueName)
-      
+
       await sender.send(queueName, {
-        message: 'testing queues'
+        message: 'testing queues',
       })
-    }
-    catch (err) {
-      console.log('Error', err)
+    } catch (err) {
       should.not.exist(err)
     }
   })
@@ -88,12 +82,10 @@ describe('Queue Send', function () {
       var queueName2 = 'test__queueTwo.abc'
 
       queue.once(queueName1, function (data) {
-        console.log('on queue 1', data)
         data.should.have.property('message', 'Queue One')
       })
 
       queue.once(queueName2, function (data) {
-        console.log('on queue 2', data)
         data.should.have.property('message', 'Queue Two')
       })
 
@@ -101,15 +93,13 @@ describe('Queue Send', function () {
       await queue.listen(queues)
 
       await sender.send(queueName1, {
-        message: 'Queue One'
+        message: 'Queue One',
       })
 
       await queue.send(queueName2, {
-        message: 'Queue Two'
+        message: 'Queue Two',
       })
-    }
-    catch (err) {
-      console.log('Error', err)
+    } catch (err) {
       should.not.exist(err)
     }
   })
@@ -132,7 +122,7 @@ describe('frameMax negotiation', function () {
     connection.connection.frameMax.should.be.aboveOrEqual(8192)
     await mq.disconnect()
   })
-});
+})
 
 describe('Queue listenManual', function () {
   this.timeout(20000)
@@ -187,16 +177,16 @@ describe('Queue listenManual', function () {
     await consumer.listenManual(queueName, async function (data, message) {
       received.push({
         message: data.message,
-        redelivered: message.fields.redelivered
+        redelivered: message.fields.redelivered,
       })
     })
 
     await sender.send(queueName, {
-      message: 'first'
+      message: 'first',
     })
 
     await sender.send(queueName, {
-      message: 'second'
+      message: 'second',
     })
 
     await delay(500)
@@ -224,18 +214,32 @@ describe('Queue listenManual', function () {
     // both messages are sent before the consumer starts so the broker dispatches
     // them in priority order, a running consumer would take the first message
     // regardless of its priority
-    await sender.send(queueName, {
-      message: 'low priority'
-    }, 0, { priority: 1 })
+    await sender.send(
+      queueName,
+      {
+        message: 'low priority',
+      },
+      0,
+      { priority: 1 },
+    )
 
-    await sender.send(queueName, {
-      message: 'high priority'
-    }, 0, { priority: 9 })
+    await sender.send(
+      queueName,
+      {
+        message: 'high priority',
+      },
+      0,
+      { priority: 9 },
+    )
 
     var order = []
-    await consumer.listenManual(queueName, async function (data, message) {
-      order.push(data.message)
-    }, { queueArguments: queueArguments })
+    await consumer.listenManual(
+      queueName,
+      async function (data, message) {
+        order.push(data.message)
+      },
+      { queueArguments: queueArguments },
+    )
 
     await delay(500)
 
@@ -254,23 +258,32 @@ describe('Queue listenManual', function () {
 
     // the sender re-asserts the queue on send: its options must match the
     // consumer's x-max-priority declaration or the broker 406s
-    sender.queueOptions = { durable: true, arguments: { 'x-max-priority': 10 } }
+    sender.queueOptions = {
+      durable: true,
+      arguments: { 'x-max-priority': 10 },
+    }
 
     var received = []
-    await consumer.listenManual(queueName, async function (data) {
-      received.push(data.message)
-    }, { queueArguments: { 'x-max-priority': 10 } })
+    await consumer.listenManual(
+      queueName,
+      async function (data) {
+        received.push(data.message)
+      },
+      { queueArguments: { 'x-max-priority': 10 } },
+    )
 
     // explicit null for sendOptions must not crash - default options apply
     await sender.send(queueName, { message: 'null options' }, 0, null)
     await sender.send(queueName, { message: 'no options' })
 
-    await new Promise(function (resolve) { setTimeout(resolve, 300) })
+    await new Promise(function (resolve) {
+      setTimeout(resolve, 300)
+    })
 
     received.should.have.lengthOf(2)
     received.should.containEql('null options')
     received.should.containEql('no options')
-  });
+  })
 
   it('Should contain acknowledgement failures when the channel closes mid-task', async function () {
     var pair = await createQueuePair()
@@ -281,20 +294,28 @@ describe('Queue listenManual', function () {
     await consumer.channel.deleteQueue(queueName)
 
     var unhandledRejection = 'none'
-    var onUnhandled = function (err) { unhandledRejection = err }
+    var onUnhandled = function (err) {
+      unhandledRejection = err
+    }
     process.on('unhandledRejection', onUnhandled)
 
     // the channel closes while the task runs: the ack that follows throws
-    await consumer.listenManual(queueName, async function () {
-      await consumer.channel.close()
-    }, { globalPrefetch: true })
+    await consumer.listenManual(
+      queueName,
+      async function () {
+        await consumer.channel.close()
+      },
+      { globalPrefetch: true },
+    )
 
     await sender.send(queueName, { message: 'task during channel close' })
-    await new Promise(function (resolve) { setTimeout(resolve, 300) })
+    await new Promise(function (resolve) {
+      setTimeout(resolve, 300)
+    })
 
     process.removeListener('unhandledRejection', onUnhandled)
     unhandledRejection.should.equal('none')
-  });
+  })
 
   it('Should drop a failed task by default (onFailure ack) and keep processing the queue', async function () {
     var pair = await createQueuePair()
@@ -318,13 +339,13 @@ describe('Queue listenManual', function () {
     })
 
     await sender.send(queueName, {
-      message: 'boom'
+      message: 'boom',
     })
 
     // with a channel-wide prefetch of 1 the second message is only delivered
     // if the failed one was acked
     await sender.send(queueName, {
-      message: 'after failure'
+      message: 'after failure',
     })
 
     await delay(500)
@@ -345,18 +366,22 @@ describe('Queue listenManual', function () {
     await consumer.channel.deleteQueue(queueName)
 
     var attempts = []
-    await consumer.listenManual(queueName, async function (data, message) {
-      attempts.push({
-        message: data.message,
-        redelivered: message.fields.redelivered
-      })
-      if (!message.fields.redelivered) {
-        throw new Error('failing on purpose on the first attempt')
-      }
-    }, { onFailure: 'requeue' })
+    await consumer.listenManual(
+      queueName,
+      async function (data, message) {
+        attempts.push({
+          message: data.message,
+          redelivered: message.fields.redelivered,
+        })
+        if (!message.fields.redelivered) {
+          throw new Error('failing on purpose on the first attempt')
+        }
+      },
+      { onFailure: 'requeue' },
+    )
 
     await sender.send(queueName, {
-      message: 'requeue me'
+      message: 'requeue me',
     })
 
     await delay(500)
@@ -395,22 +420,25 @@ describe('Queue listenManual', function () {
       processed++
     }
 
-    await consumer.listenManual([queueName1, queueName2], slowHandler, { prefetch: 1, globalPrefetch: true })
-
-    await sender.send(queueName1, {
-      message: 'q1 first'
+    await consumer.listenManual([queueName1, queueName2], slowHandler, {
+      prefetch: 1,
+      globalPrefetch: true,
     })
 
     await sender.send(queueName1, {
-      message: 'q1 second'
+      message: 'q1 first',
+    })
+
+    await sender.send(queueName1, {
+      message: 'q1 second',
     })
 
     await sender.send(queueName2, {
-      message: 'q2 first'
+      message: 'q2 first',
     })
 
     await sender.send(queueName2, {
-      message: 'q2 second'
+      message: 'q2 second',
     })
 
     await delay(2000)
@@ -462,7 +490,9 @@ describe('Queue listen failure containment', function () {
     await channel.deleteQueue(queueName)
 
     let unhandledRejection = 'none'
-    const onUnhandled = function (err) { unhandledRejection = err }
+    const onUnhandled = function (err) {
+      unhandledRejection = err
+    }
     process.on('unhandledRejection', onUnhandled)
 
     const failures = []
@@ -491,7 +521,10 @@ describe('Queue listen failure containment', function () {
     // the channel is still alive and the failed message was acked: a valid
     // message published afterwards is processed instead of being stuck behind
     // an unacked one
-    channel.sendToQueue(queueName, Buffer.from(JSON.stringify({ message: 'after failure' })))
+    channel.sendToQueue(
+      queueName,
+      Buffer.from(JSON.stringify({ message: 'after failure' })),
+    )
 
     await delay(300)
 

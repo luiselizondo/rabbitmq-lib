@@ -10,64 +10,58 @@ describe('Queue Send', function () {
     connectMaxAttempts: 1,
     connectDelayMS: 100,
   }
-  
+
   var mq = new MQ(config)
   var queue = new Queue(config)
-  
+
   before(async function () {
     await mq.connect()
     var channel = await mq.createChannel()
     return queue.setChannel(channel)
   })
-  
+
   after(async function () {
     return await mq.disconnect()
   })
 
-  it("Should be able to send a message to a queue and receive it", async function () {
+  it('Should be able to send a message to a queue and receive it', async function () {
     try {
-      var queueName = 'queueSendMessage';
+      var queueName = 'queueSendMessage'
 
       queue.on(queueName, function (data) {
-        console.log('Message received', data)
         data.should.have.property('message', 'testing queues')
       })
-      
+
       var listener = await queue.listen(queueName)
 
       await queue.send(queueName, {
-        message: 'testing queues'
+        message: 'testing queues',
       })
-    }
-    catch (err) {
-      console.log(err)
+    } catch (err) {
       should.not.exist(err)
     }
   })
 
-  it("Should be able to send a message to a queue and receive a generic event", async function () {
+  it('Should be able to send a message to a queue and receive a generic event', async function () {
     try {
-      var queueName = 'genericEvent';
+      var queueName = 'genericEvent'
 
       queue.on('queueEventReceived', function (data) {
         // it can receive multiple events from other tests
         if (data.name === 'genericEvent') {
-          console.log('Generic message received', data)
           data.should.have.property('name', 'genericEvent')
           data.should.have.property('type', 'queue')
           data.should.have.property('data')
           data.data.should.have.property('message', 'testing queues')
         }
       })
-      
+
       var listener = await queue.listen(queueName)
 
       await queue.send(queueName, {
-        message: 'testing queues'
+        message: 'testing queues',
       })
-    }
-    catch (err) {
-      console.log(err)
+    } catch (err) {
       should.not.exist(err)
     }
   })
@@ -79,7 +73,6 @@ describe('Queue Send', function () {
       var queueName2 = 'test__queueTwo.abc'
 
       queue.on(queueName1, function (data) {
-        console.log('on queue 1', data)
         data.should.have.property('message', 'Queue One')
       })
 
@@ -91,15 +84,13 @@ describe('Queue Send', function () {
       await queue.listen(queues)
 
       await queue.send(queueName1, {
-        message: 'Queue One'
+        message: 'Queue One',
       })
 
       await queue.send(queueName2, {
-        message: 'Queue Two'
+        message: 'Queue Two',
       })
-    }
-    catch (err) {
-      console.log(err)
+    } catch (err) {
       should.not.exist(err)
     }
   })

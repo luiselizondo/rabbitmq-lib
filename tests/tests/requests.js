@@ -1,20 +1,22 @@
 var should = require('should')
 var MQ = require('../../index').MQ
 var RPC = require('../../index').RPC
-var EventEmitter = require('events');
+var EventEmitter = require('events')
 class Events extends EventEmitter {}
 
 describe('RPC Error', function () {
-  it("Should throw an error if no connection is set", async function () {
+  it('Should throw an error if no connection is set', async function () {
     try {
       var sender = new RPC()
-      
+
       var data = await sender.send('getSuperhero', {
-        name: 'Batman'
+        name: 'Batman',
       })
-    }
-    catch (err) {
-      err.should.have.property('message', 'A connection is needed, call setConnection() on the instance once')
+    } catch (err) {
+      err.should.have.property(
+        'message',
+        'A connection is needed, call setConnection() on the instance once',
+      )
     }
   })
 })
@@ -32,7 +34,7 @@ describe('Requests', function () {
 
   var rpc = new RPC()
   var sender = new RPC()
-  
+
   before(async function () {
     await mq1.connect()
     var channelConsumer = await mq1.createChannel()
@@ -41,106 +43,96 @@ describe('Requests', function () {
     var connection = await mq2.connect()
     return sender.setConnection(connection)
   })
-  
+
   after(async function () {
     await mq1.disconnect()
     return await mq2.disconnect()
   })
 
-  it("Should be able to send a request, answer it and respond to it", async function () {
+  it('Should be able to send a request, answer it and respond to it', async function () {
     try {
-      var queueName = 'someEventOnQueue4';
-  
-      function callbackToExecute(data, next) {
-        console.log('Callback executed on request received', data)
-        return next(false, {message: 'Tested ' + data.testKey})
+      var queueName = 'someEventOnQueue4'
+
+      function callbackToExecute (data, next) {
+        return next(false, { message: 'Tested ' + data.testKey })
       }
-  
+
       var listener = await rpc.listen(queueName, callbackToExecute)
-  
+
       var result = await sender.send(queueName, {
-        testKey: 'testName'
+        testKey: 'testName',
       })
-  
-      var response = JSON.parse(result);
+
+      var response = JSON.parse(result)
       response.should.have.property('type', 'success')
       response.results.should.have.property('message', 'Tested testName')
-    }
-    catch (err) {
+    } catch (err) {
       should.not.exist(err)
     }
   })
 
-  it("Should be able to send a request, and respond with an error", async function () {
+  it('Should be able to send a request, and respond with an error', async function () {
     try {
-      var queueName = 'requestError';
-  
-      function callbackToExecute(data, next) {
-        console.log('Callback executed on request received', data)
+      var queueName = 'requestError'
+
+      function callbackToExecute (data, next) {
         return next('No valid request')
       }
-  
+
       var listener = await rpc.listen(queueName, callbackToExecute)
-  
+
       var result = await sender.send(queueName, {
-        testKey: 'invalid'
+        testKey: 'invalid',
       })
-  
-      var response = JSON.parse(result);
+
+      var response = JSON.parse(result)
       response.should.have.property('type', 'error')
       response.should.have.property('error', 'No valid request')
-    }
-    catch (err) {
-      console.log(err)
+    } catch (err) {
       should.not.exist(err)
     }
   })
 
-  it("Should be able to send a request, and respond with an error", async function () {
+  it('Should be able to send a request, and respond with an error', async function () {
     try {
-      var queueName = 'requestError';
-  
-      function callbackToExecute(data, next) {
-        console.log('Callback executed on request received', data)
+      var queueName = 'requestError'
+
+      function callbackToExecute (data, next) {
         return next('No valid request')
       }
-  
+
       var listener = await rpc.listen(queueName, callbackToExecute)
-  
+
       var result = await sender.send(queueName, {
-        testKey: 'invalid'
+        testKey: 'invalid',
       })
-  
-      var response = JSON.parse(result);
+
+      var response = JSON.parse(result)
       response.should.have.property('type', 'error')
       response.should.have.property('error', 'No valid request')
-    }
-    catch (err) {
-      console.log(err)
+    } catch (err) {
       should.not.exist(err)
     }
   })
 
-  it("Should be able to send a request, and respond with an error because of empty results", async function () {
+  it('Should be able to send a request, and respond with an error because of empty results', async function () {
     try {
-      var queueName = 'requestError2';
-  
-      function callbackToExecute(data, next) {
-        console.log('Callback executed on request received', data)
+      var queueName = 'requestError2'
+
+      function callbackToExecute (data, next) {
         return next(false, null)
       }
-  
+
       var listener = await rpc.listen(queueName, callbackToExecute)
-  
+
       var result = await sender.send(queueName, {
-        testKey: 'invalid'
+        testKey: 'invalid',
       })
-  
-      var response = JSON.parse(result);
+
+      var response = JSON.parse(result)
       response.should.have.property('type', 'error')
       response.should.have.property('error', 'No data found')
-    }
-    catch (err) {
+    } catch (err) {
       should.not.exist(err)
     }
   })
@@ -159,7 +151,9 @@ describe('Requests', function () {
     }
 
     const startedAt = Date.now()
-    const result = await timeoutRpc.send('eventNobodyServes', { testKey: 'timeout' })
+    const result = await timeoutRpc.send('eventNobodyServes', {
+      testKey: 'timeout',
+    })
     const elapsed = Date.now() - startedAt
 
     should.not.exist(result)
@@ -193,7 +187,9 @@ describe('Requests', function () {
 
     let waited = 0
     while (failures.length === 0 && waited < 2000) {
-      await new Promise(function (resolve) { setTimeout(resolve, 25) })
+      await new Promise(function (resolve) {
+        setTimeout(resolve, 25)
+      })
       waited += 25
     }
 
