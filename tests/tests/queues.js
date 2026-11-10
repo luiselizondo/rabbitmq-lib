@@ -593,3 +593,384 @@ describe('Queue listener containment', function () {
     expect(processed[0]).to.have.property('name', 'healthy message')
   })
 })
+
+describe('Queue missing-channel guards and delayed exchange (stub channel)', function () {
+  const MISSING_CHANNEL_MESSAGE = /A channel is needed/
+
+  function createRecordingChannel () {
+    const calls = []
+    const record = (method, args) => calls.push({ method, args })
+    const channel = {
+      calls,
+      assertQueue: async (...args) => {
+        record('assertQueue', args)
+        return {}
+      },
+      assertExchange: async (...args) => {
+        record('assertExchange', args)
+        return {}
+      },
+      bindQueue: async (...args) => {
+        record('bindQueue', args)
+        return {}
+      },
+      prefetch: async (...args) => {
+        record('prefetch', args)
+      },
+      consume: async (...args) => {
+        record('consume', args)
+        return { consumerTag: 'stub' }
+      },
+      publish: (...args) => {
+        record('publish', args)
+        return true
+      },
+      ack: (...args) => record('ack', args),
+      nack: (...args) => record('nack', args),
+      callsOf (method) {
+        return calls.filter((call) => call.method === method).map((call) => call.args)
+      },
+    }
+    return channel
+  }
+
+  describe('missing channel guards', function () {
+    let queue
+    let missingChannelEvents
+
+    beforeEach(function () {
+      queue = new Queue()
+      missingChannelEvents = 0
+      queue.on('missingChannelOnQueue', () => { missingChannelEvents += 1 })
+    })
+
+    it('Should throw a clear error and emit the missing-channel event when listen() is called without a channel', async function () {
+      let error
+      try {
+        await queue.listen('someQueue')
+      }
+      catch (err) {
+        error = err
+      }
+
+      expect(error).to.be.an('error')
+      expect(error.message).to.match(MISSING_CHANNEL_MESSAGE)
+      expect(missingChannelEvents).to.equal(1)
+    })
+
+    it('Should throw a clear error and emit the missing-channel event when listenManual() is called without a channel', async function () {
+      let error
+      try {
+        await queue.listenManual('someQueue', async () => {})
+      }
+      catch (err) {
+        error = err
+      }
+
+      expect(error).to.be.an('error')
+      expect(error.message).to.match(MISSING_CHANNEL_MESSAGE)
+      expect(missingChannelEvents).to.equal(1)
+    })
+
+    it('Should throw a clear error and emit the missing-channel event when send() is called without a channel', async function () {
+      let error
+      try {
+        await queue.send('someQueue', { hello: 'world' })
+      }
+      catch (err) {
+        error = err
+      }
+
+      expect(error).to.be.an('error')
+      expect(error.message).to.match(MISSING_CHANNEL_MESSAGE)
+      expect(missingChannelEvents).to.equal(0)
+    })
+  })
+
+  describe('delayed exchange', function () {
+    const DELAYED_EXCHANGE_NAME = 'lib.test.delayed'
+    const QUEUE_NAME = 'lib.test.delayed.queue'
+
+    it('Should assert and bind the delayed exchange when listen() is called with isDelayed', async function () {
+      const channel = createRecordingChannel()
+      const queue = new Queue(DELAYED_EXCHANGE_NAME)
+      queue.setChannel(channel)
+
+      await queue.listen(QUEUE_NAME, { isDelayed: true })
+
+      const assertExchangeCalls = channel.callsOf('assertExchange')
+      expect(assertExchangeCalls).to.have.lengthOf(1)
+      expect(assertExchangeCalls[0][0]).to.equal(DELAYED_EXCHANGE_NAME)
+      expect(assertExchangeCalls[0][1]).to.equal('x-delayed-message')
+      expect(assertExchangeCalls[0][2]).to.deep.equal({
+        arguments: { 'x-delayed-type': 'direct' },
+      })
+
+      const bindQueueCalls = channel.callsOf('bindQueue')
+      expect(bindQueueCalls).to.have.lengthOf(1)
+      expect(bindQueueCalls[0]).to.deep.equal([QUEUE_NAME, DELAYED_EXCHANGE_NAME, QUEUE_NAME])
+
+      expect(queue.isDelayed).to.equal(true)
+      expect(channel.callsOf('assertQueue')[0][0]).to.equal(QUEUE_NAME)
+      expect(channel.callsOf('consume')[0][0]).to.equal(QUEUE_NAME)
+    })
+
+    it('Should publish through the delayed exchange with an x-delay header when send() is given a delay', async function () {
+      const channel = createRecordingChannel()
+      const queue = new Queue(DELAYED_EXCHANGE_NAME)
+      queue.setChannel(channel)
+
+      const result = await queue.send(QUEUE_NAME, { hello: 'world' }, 5000)
+
+      expect(result).to.equal(true)
+
+      const assertExchangeCalls = channel.callsOf('assertExchange')
+      expect(assertExchangeCalls).to.have.lengthOf(1)
+      expect(assertExchangeCalls[0][0]).to.equal(DELAYED_EXCHANGE_NAME)
+      expect(assertExchangeCalls[0][1]).to.equal('x-delayed-message')
+
+      const bindQueueCalls = channel.callsOf('bindQueue')
+      expect(bindQueueCalls).to.have.lengthOf(1)
+      expect(bindQueueCalls[0]).to.deep.equal([QUEUE_NAME, DELAYED_EXCHANGE_NAME, QUEUE_NAME])
+
+      const publishCalls = channel.callsOf('publish')
+      expect(publishCalls).to.have.lengthOf(1)
+      expect(publishCalls[0][0]).to.equal(DELAYED_EXCHANGE_NAME)
+      expect(publishCalls[0][1]).to.equal(QUEUE_NAME)
+      expect(publishCalls[0][3]).to.deep.equal({
+        persistent: true,
+        headers: { 'x-delay': 5000 },
+      })
+    })
+  })
+})
+
+describe('Queue listenManual failure containment', function () {
+  this.timeout(20000)
+
+  const config = {
+    exchange_name: 'rabbitmq_lib_test',
+    url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/?frameMax=131072',
+    connectMaxAttempts: 1,
+    connectDelayMS: 100,
+  }
+
+  const mqConsumer = new MQ(config)
+
+  const delay = function (ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms)
+    })
+  }
+
+  before(async function () {
+    await mqConsumer.connect()
+    return
+  })
+
+  after(async function () {
+    return await mqConsumer.disconnect()
+  })
+
+  it('Should emit failed, ack a non-JSON message and keep consuming when listenManual receives a non-JSON payload', async function () {
+    const consumer = new Queue()
+    const channel = await mqConsumer.createChannel()
+    consumer.setChannel(channel)
+
+    const queueName = 'manualNonJsonTest'
+    // queues are durable and survive on the shared broker between runs, start clean
+    await channel.deleteQueue(queueName)
+
+    let unhandledRejection = 'none'
+    const onUnhandled = function (err) {
+      unhandledRejection = err
+    }
+    process.on('unhandledRejection', onUnhandled)
+
+    const failures = []
+    consumer.on('failed', function (info) {
+      failures.push(info)
+    })
+
+    const received = []
+    await consumer.listenManual(queueName, async function (data) {
+      received.push(data.message)
+    })
+
+    // raw, non-JSON content published straight onto the channel: JSON.parse
+    // inside the consumer throws
+    channel.sendToQueue(queueName, Buffer.from('this is not json'))
+
+    await delay(300)
+
+    expect(failures).to.have.lengthOf(1)
+    expect(failures[0]).to.have.property('queueName', queueName)
+    expect(failures[0]).to.have.property('error')
+    expect(failures[0].error).to.be.an.instanceOf(Error)
+
+    // the failed message was acked: a valid message published afterwards is
+    // processed instead of being stuck behind an unacked one
+    channel.sendToQueue(
+      queueName,
+      Buffer.from(JSON.stringify({ message: 'after failure' })),
+    )
+
+    await delay(300)
+
+    process.removeListener('unhandledRejection', onUnhandled)
+    expect(unhandledRejection).to.equal('none')
+    expect(received).to.eql(['after failure'])
+  })
+
+  it('Should contain an ack failure and emit failed when the channel closes while a listen() listener runs', async function () {
+    const consumer = new Queue()
+    const sender = new Queue()
+    const consumerChannel = await mqConsumer.createChannel()
+    consumer.setChannel(consumerChannel)
+    sender.setChannel(await mqConsumer.createChannel())
+
+    const queueName = 'listenClosedChannelAck'
+    await consumerChannel.deleteQueue(queueName)
+
+    let unhandledRejection = 'none'
+    const onUnhandled = function (err) {
+      unhandledRejection = err
+    }
+    process.on('unhandledRejection', onUnhandled)
+
+    const failures = []
+    consumer.on('failed', function (info) {
+      failures.push(info)
+    })
+
+    await consumer.listen([queueName])
+
+    // the channel closes while the listener runs: the ack that follows throws
+    consumer.on(queueName, async function () {
+      await consumer.channel.close()
+    })
+
+    await sender.send(queueName, { message: 'message during channel close' })
+    await delay(300)
+
+    process.removeListener('unhandledRejection', onUnhandled)
+    expect(unhandledRejection).to.equal('none')
+    // Both failures are ack failures: closing the channel inside the async
+    // listener makes the ack in the try block throw ('Channel closing'), and
+    // the ack inside the catch throws the same way. emit() does not await
+    // listeners, so the async listener itself cannot produce a failed event.
+    expect(failures).to.have.lengthOf(2)
+    expect(failures[0]).to.have.property('queueName', queueName)
+    expect(failures[0]).to.have.property('error')
+    expect(failures[0].error).to.be.an.instanceOf(Error)
+    expect(failures[1]).to.have.property('queueName', queueName)
+    expect(failures[1]).to.have.property('error')
+    expect(failures[1].error).to.be.an.instanceOf(Error)
+  })
+})
+
+describe('Queue null-delivery guards', function () {
+  this.timeout(20000)
+
+  const config = {
+    exchange_name: 'rabbitmq_lib_test',
+    url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/?frameMax=131072',
+    connectMaxAttempts: 1,
+    connectDelayMS: 100,
+  }
+
+  const mq = new MQ(config)
+
+  const delay = function (ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms)
+    })
+  }
+
+  before(async function () {
+    await mq.connect()
+    return
+  })
+
+  after(async function () {
+    return await mq.disconnect()
+  })
+
+  it('Should ignore a null delivery in listen() when the consumer is cancelled', async function () {
+    const consumer = new Queue()
+    const channel = await mq.createChannel()
+    consumer.setChannel(channel)
+
+    const queueName = 'nullDeliveryListen'
+    // queues are durable and survive on the shared broker between runs, start clean
+    await channel.deleteQueue(queueName)
+
+    let unhandledRejection = 'none'
+    const onUnhandled = function (err) {
+      unhandledRejection = err
+    }
+    process.on('unhandledRejection', onUnhandled)
+
+    const failures = []
+    consumer.on('failed', function (info) {
+      failures.push(info)
+    })
+
+    const received = []
+    consumer.on('queueEventReceived', function (info) {
+      if (info.name === queueName) received.push(info.data.message)
+    })
+
+    await consumer.listen([queueName])
+
+    // deleting the queue from a separate channel cancels the consumer: amqplib
+    // then invokes the consumer callback with null, which must be ignored
+    // instead of surfacing a spurious failed event
+    const adminChannel = await mq.createChannel()
+    await adminChannel.deleteQueue(queueName)
+
+    await delay(500)
+
+    process.removeListener('unhandledRejection', onUnhandled)
+    expect(unhandledRejection).to.equal('none')
+    expect(failures).to.have.lengthOf(0)
+    expect(received).to.have.lengthOf(0)
+  })
+
+  it('Should ignore a null delivery in listenManual() when the consumer is cancelled', async function () {
+    const consumer = new Queue()
+    const channel = await mq.createChannel()
+    consumer.setChannel(channel)
+
+    const queueName = 'nullDeliveryListenManual'
+    await channel.deleteQueue(queueName)
+
+    let unhandledRejection = 'none'
+    const onUnhandled = function (err) {
+      unhandledRejection = err
+    }
+    process.on('unhandledRejection', onUnhandled)
+
+    const failures = []
+    consumer.on('failed', function (info) {
+      failures.push(info)
+    })
+
+    const received = []
+    await consumer.listenManual(queueName, async function (data) {
+      received.push(data.message)
+    })
+
+    // same cancellation path as listen(): the existing guard must swallow the
+    // null delivery without emitting failed
+    const adminChannel = await mq.createChannel()
+    await adminChannel.deleteQueue(queueName)
+
+    await delay(500)
+
+    process.removeListener('unhandledRejection', onUnhandled)
+    expect(unhandledRejection).to.equal('none')
+    expect(failures).to.have.lengthOf(0)
+    expect(received).to.have.lengthOf(0)
+  })
+})

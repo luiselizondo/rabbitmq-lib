@@ -203,3 +203,52 @@ describe('Requests', function () {
     expect(response.results).to.have.property('message', 'Contained afterFailure')
   })
 })
+
+describe('RPC Guards', function () {
+  it('Should throw a clear error when listen() is called without a channel', async function () {
+    const rpc = new RPC()
+
+    let rejection = null
+    try {
+      await rpc.listen('someQueue')
+    } catch (err) {
+      rejection = err
+    }
+
+    expect(rejection).to.be.an.instanceOf(Error)
+    expect(rejection.message).to.match(/A channel is needed/)
+  })
+
+  it('Should reject with the original publish error when the request cannot be published', async function () {
+    const publishError = new Error('publish failed')
+
+    const stubChannel = {
+      consume: async function () {
+        return { consumerTag: 'stub' }
+      },
+      sendToQueue: function () {
+        throw publishError
+      },
+      close: async function () {
+        throw new Error('close failed')
+      },
+    }
+
+    const rpc = new RPC()
+    rpc.setConnection({
+      createChannel: async function () {
+        return stubChannel
+      },
+    })
+
+    let rejection = null
+    try {
+      await rpc.send('someQueue', { testKey: 'publishFailure' })
+    } catch (err) {
+      rejection = err
+    }
+
+    expect(rejection).to.equal(publishError)
+    expect(rejection.message).to.equal('publish failed')
+  })
+})
