@@ -191,6 +191,11 @@ describe('MQ reconnection', function () {
     const channel = await mq.createChannel()
     expect(channel).to.be.an('object')
     await mq.disconnect()
+
+    // Release the old connection: restore the real close and close it so it
+    // does not linger on the broker after the test.
+    delete oldConnection.close
+    await oldConnection.close().catch(() => {})
   })
 
   it('Should throw a clear error from createChannel after disconnect()', async function () {
