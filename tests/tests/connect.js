@@ -251,4 +251,20 @@ describe('MQ reconnection', function () {
     await oldConnection.close().catch(() => {})
     await mq.disconnect().catch(() => {})
   })
+
+  it('Should throw a clear error from disconnect() when there is no connection', async function () {
+    const mq = new MQ({ url: 'amqp://u:p@h:5672/' })
+
+    let rejection = null
+    try {
+      await mq.disconnect()
+    }
+    catch (err) {
+      rejection = err
+    }
+
+    expect(rejection).to.be.an('error')
+    expect(rejection).to.not.be.an.instanceOf(TypeError)
+    expect(rejection.message).to.match(/No connection/)
+  })
 })
