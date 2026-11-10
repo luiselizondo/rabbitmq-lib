@@ -46,3 +46,51 @@ describe('public contract', function () {
     })
   })
 })
+
+describe('Internal wiring', function () {
+  it('Should store a manually injected connection via MQ setConnection', function () {
+    const mq = new lib.MQ({ url: 'amqp://u:p@h:5672/' })
+    const fake = { marker: true }
+
+    expect(mq.connection).to.equal(null)
+
+    mq.setConnection(fake)
+    expect(mq.connection).to.equal(fake)
+
+    const fake2 = { marker: 'setter' }
+    mq.connection = fake2
+    expect(mq.connection).to.equal(fake2)
+  })
+
+  it('Should store manually injected channels via the channel setters', function () {
+    const fakeChannel = { marker: 'channel' }
+
+    const queue = new lib.Queue('internalWiringDelayedExchange')
+    const rpc = new lib.RPC()
+    const topic = new lib.Topic('internalWiringTopic')
+
+    expect(queue.channel).to.equal(undefined)
+    expect(rpc.channel).to.equal(undefined)
+    expect(topic.channel).to.equal(undefined)
+
+    queue.channel = fakeChannel
+    rpc.channel = fakeChannel
+    topic.channel = fakeChannel
+
+    expect(queue.channel).to.equal(fakeChannel)
+    expect(rpc.channel).to.equal(fakeChannel)
+    expect(topic.channel).to.equal(fakeChannel)
+  })
+
+  it('Should toggle the delayed flag via Queue setIsDelayed', function () {
+    const queue = new lib.Queue('internalWiringDelayedExchange')
+
+    expect(queue.isDelayed).to.equal(false)
+
+    queue.setIsDelayed(true)
+    expect(queue.isDelayed).to.equal(true)
+
+    queue.setIsDelayed(false)
+    expect(queue.isDelayed).to.equal(false)
+  })
+})

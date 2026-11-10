@@ -245,3 +245,35 @@ describe('Topic listener containment', function () {
     expect(received[0]).to.have.property('name', 'healthy message')
   })
 })
+
+describe('Topic missing channel guards', function () {
+  it('Should throw a clear error when listen() is called without a channel', async function () {
+    const topic = new Topic('missingChannelOnListenTopic')
+    let error
+
+    try {
+      await topic.listen('some.topic')
+    } catch (err) {
+      error = err
+    }
+
+    expect(error).to.be.an.instanceOf(Error)
+    expect(error.message).to.match(/A channel is needed/)
+    expect(topic.channel).to.equal(undefined)
+  })
+
+  it('Should throw a clear error when publish() is called without a channel', async function () {
+    const topic = new Topic('missingChannelOnPublishTopic')
+    let error
+
+    try {
+      await topic.publish('some.topic', { message: 'no channel' })
+    } catch (err) {
+      error = err
+    }
+
+    expect(error).to.be.an.instanceOf(Error)
+    expect(error.message).to.match(/A channel is needed/)
+    expect(topic.channel).to.equal(undefined)
+  })
+})

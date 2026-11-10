@@ -85,3 +85,130 @@ describe('Channel', function () {
       })
   })
 })
+
+describe('MQ reconnection', function () {
+  const config = {
+    exchange_name: 'rabbitmq_lib_test',
+    url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/',
+  }
+
+  const waitFor = (mq, event, timeoutMS = 5000) =>
+    new Promise((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error(`Timed out waiting for "${event}"`)),
+        timeoutMS,
+      )
+      mq.once(event, (payload) => {
+        clearTimeout(timer)
+        resolve(payload)
+      })
+    })
+
+  it('Should emit error and disconnected and flip isConnected when the live connection is destroyed', async function () {
+    this.timeout(20000)
+    const mq = new MQ(config)
+    await mq.connect()
+
+    let emittedError = null
+    let disconnected = false
+    mq.on('error', (error) => {
+      emittedError = error
+    })
+    mq.on('disconnected', () => {
+      disconnected = true
+    })
+    const disconnectedEvent = waitFor(mq, 'disconnected')
+
+    // amqplib exposes the underlying net socket as connection.connection.stream
+    mq.connection.connection.stream.destroy(new Error('simulated reset'))
+    await disconnectedEvent
+
+    expect(mq.isConnected).to.equal(false)
+    expect(emittedError).to.be.an('error')
+    expect(disconnected).to.equal(true)
+  })
+
+  it('Should resolve undefined from reconnect() while the connection is alive', async function () {
+    this.timeout(20000)
+    const mq = new MQ(config)
+    await mq.connect()
+
+    const result = await mq.reconnect()
+
+    expect(result).to.be.undefined
+    await mq.disconnect()
+  })
+
+  it('Should reconnect after the connection is lost', async function () {
+    this.timeout(20000)
+    const mq = new MQ(config)
+    await mq.connect()
+    const oldConnection = mq.connection
+
+    mq.on('error', () => {})
+    const disconnectedEvent = waitFor(mq, 'disconnected')
+    let reconnectedWith = null
+    mq.on('reconnected', (connection) => {
+      reconnectedWith = connection
+    })
+
+    oldConnection.connection.stream.destroy(new Error('simulated reset'))
+    await disconnectedEvent
+
+    const fresh = await mq.reconnect()
+
+    expect(fresh).to.be.an('object')
+    expect(fresh).to.not.equal(oldConnection)
+    expect(reconnectedWith).to.equal(fresh)
+    expect(mq.isConnected).to.equal(true)
+    const channel = await mq.createChannel()
+    expect(channel).to.be.an('object')
+    await mq.disconnect()
+  })
+
+  it('Should reconnect after disconnect()', async function () {
+    this.timeout(20000)
+    const mq = new MQ(config)
+    await mq.connect()
+    const oldConnection = mq.connection
+    let reconnectedWith = null
+    mq.on('reconnected', (connection) => {
+      reconnectedWith = connection
+    })
+
+    // Stub close() so the broker's own 'close' event never arrives: this keeps
+    // the test on the documented disconnect() -> reconnect() path only.
+    oldConnection.close = async () => {}
+
+    await mq.disconnect()
+    expect(mq.isConnected).to.equal(false)
+    const fresh = await mq.reconnect()
+
+    expect(fresh).to.be.an('object')
+    expect(fresh).to.not.equal(oldConnection)
+    expect(reconnectedWith).to.equal(fresh)
+    expect(mq.isConnected).to.equal(true)
+    const channel = await mq.createChannel()
+    expect(channel).to.be.an('object')
+    await mq.disconnect()
+  })
+
+  it('Should throw a clear error from createChannel after disconnect()', async function () {
+    this.timeout(20000)
+    const mq = new MQ(config)
+    await mq.connect()
+    await mq.disconnect()
+
+    let rejection = null
+    try {
+      await mq.createChannel()
+    }
+    catch (err) {
+      rejection = err
+    }
+
+    expect(rejection).to.be.an('error')
+    expect(rejection).to.not.be.an.instanceOf(TypeError)
+    expect(rejection.message).to.match(/No connection/)
+  })
+})

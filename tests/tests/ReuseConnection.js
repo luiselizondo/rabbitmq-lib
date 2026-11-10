@@ -12,7 +12,7 @@ describe('Queue Send', function () {
   }
 
   const mq = new MQ(config)
-  const queue = new Queue(config)
+  const queue = new Queue()
 
   before(async function () {
     await mq.connect()
