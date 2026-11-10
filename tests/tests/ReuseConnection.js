@@ -1,22 +1,22 @@
-var should = require('should')
-var Queue = require('../../index').Queue
-var MQ = require('../../index').MQ
-var EventEmitter = require('events')
+const should = require('should')
+const Queue = require('../../index').Queue
+const MQ = require('../../index').MQ
+const EventEmitter = require('events')
 
 describe('Queue Send', function () {
-  var config = {
+  const config = {
     exchange_name: 'rabbitmq_lib_test',
     url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/',
     connectMaxAttempts: 1,
     connectDelayMS: 100,
   }
 
-  var mq = new MQ(config)
-  var queue = new Queue(config)
+  const mq = new MQ(config)
+  const queue = new Queue(config)
 
   before(async function () {
     await mq.connect()
-    var channel = await mq.createChannel()
+    const channel = await mq.createChannel()
     return queue.setChannel(channel)
   })
 
@@ -26,13 +26,13 @@ describe('Queue Send', function () {
 
   it('Should be able to send a message to a queue and receive it', async function () {
     try {
-      var queueName = 'queueSendMessage'
+      const queueName = 'queueSendMessage'
 
       queue.on(queueName, function (data) {
         data.should.have.property('message', 'testing queues')
       })
 
-      var listener = await queue.listen(queueName)
+      const listener = await queue.listen(queueName)
 
       await queue.send(queueName, {
         message: 'testing queues',
@@ -44,7 +44,7 @@ describe('Queue Send', function () {
 
   it('Should be able to send a message to a queue and receive a generic event', async function () {
     try {
-      var queueName = 'genericEvent'
+      const queueName = 'genericEvent'
 
       queue.on('queueEventReceived', function (data) {
         // it can receive multiple events from other tests
@@ -56,7 +56,7 @@ describe('Queue Send', function () {
         }
       })
 
-      var listener = await queue.listen(queueName)
+      const listener = await queue.listen(queueName)
 
       await queue.send(queueName, {
         message: 'testing queues',
@@ -68,9 +68,9 @@ describe('Queue Send', function () {
 
   it('Should be able to send two messages to two different queues and receive them', async function () {
     try {
-      var events = new EventEmitter()
-      var queueName1 = 'test__queueOne.abc'
-      var queueName2 = 'test__queueTwo.abc'
+      const events = new EventEmitter()
+      const queueName1 = 'test__queueOne.abc'
+      const queueName2 = 'test__queueTwo.abc'
 
       queue.on(queueName1, function (data) {
         data.should.have.property('message', 'Queue One')
@@ -80,7 +80,7 @@ describe('Queue Send', function () {
         data.should.have.property('message', 'Queue Two')
       })
 
-      var queues = ['test__queueOne.abc', 'test__queueTwo.abc']
+      const queues = ['test__queueOne.abc', 'test__queueTwo.abc']
       await queue.listen(queues)
 
       await queue.send(queueName1, {

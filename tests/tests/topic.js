@@ -33,7 +33,7 @@ describe('Topics', function () {
 
   it('Should be able to publish an object with a string to a topic and listen to it', async function () {
     try {
-      var eventName = 'someEvent'
+      const eventName = 'someEvent'
 
       topic.once(eventName, function (data) {
         data.message.should.equal('The water is cold')
@@ -58,7 +58,7 @@ describe('Topics', function () {
 
   it('Should be able to publish a string to a topic and listen to the general event', async function () {
     try {
-      var eventName = 'someEvent1'
+      const eventName = 'someEvent1'
 
       topic.once('someEvent1', function (data) {
         data.should.have.property('message', 'The water maybe is cold')
@@ -75,8 +75,8 @@ describe('Topics', function () {
   })
 
   it('Should be able to publish an object to multiple topics and listen to them', async function () {
-    var eventName = 'someDataEvent'
-    var eventName1 = 'someOtherDataEvent'
+    const eventName = 'someDataEvent'
+    const eventName1 = 'someOtherDataEvent'
 
     topic.once(eventName, function (data) {
       data.should.have.property('message', 'The water is cold')
@@ -90,7 +90,7 @@ describe('Topics', function () {
       data.should.have.property('tid')
     })
 
-    var events = [eventName, eventName1]
+    const events = [eventName, eventName1]
     await topic.listen(events)
 
     await sender.publish(eventName, {
@@ -189,21 +189,21 @@ function wait (time) {
 }
 
 describe('Topic listener containment', function () {
-  var config = {
+  const config = {
     exchange_name: 'rabbitmq_lib_test',
     url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/',
     connectMaxAttempts: 1,
     connectDelayMS: 100,
   }
 
-  var mq1 = new MQ(config)
-  var mq2 = new MQ(config)
+  const mq1 = new MQ(config)
+  const mq2 = new MQ(config)
 
-  var listener = new Topic('listenerContainmentTopic')
-  var publisher = new Topic('listenerContainmentTopic')
-  var failures = []
-  var received = []
-  var eventName = 'listenerContainmentEvent'
+  const listener = new Topic('listenerContainmentTopic')
+  const publisher = new Topic('listenerContainmentTopic')
+  let failures = []
+  let received = []
+  const eventName = 'listenerContainmentEvent'
 
   before(async function () {
     failures = []

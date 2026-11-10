@@ -33,6 +33,9 @@ export default [
       quotes: ['error', 'single'],
       indent: ['error', 2],
       'no-var': 'error',
+      'prefer-const': 'error',
+      'prefer-template': 'error',
+      'template-curly-spacing': ['error', 'never'],
       'space-before-function-paren': ['error', 'always'],
       'comma-dangle': ['error', 'always-multiline'],
       'max-len': [
@@ -47,13 +50,11 @@ export default [
   },
   {
     // Tests are formatted with the same style rules as lib/** (the block
-    // above): ESLint fixes them on save. Only rules WITHOUT an auto-fixer
-    // stay off: no-var (legacy var usage across the test suite) and max-len
-    // (long string literals cannot be auto-wrapped). Correctness rules
-    // (no-undef, no-unused-vars) stay active.
+    // above): ESLint fixes them on save, including no-var and prefer-const.
+    // Only max-len stays off (long string literals cannot be auto-wrapped).
+    // Correctness rules (no-undef, no-unused-vars) stay active.
     files: ['tests/**/*.js'],
     rules: {
-      'no-var': 'off',
       'max-len': 'off',
       // Kept active (a new unused identifier still fails), but tolerant of the
       // handful of legacy declarations these files already carry.

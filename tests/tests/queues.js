@@ -1,29 +1,29 @@
-var should = require('should')
-var MQ = require('../../index').MQ
-var Queue = require('../../index').Queue
-var EventEmitter = require('events')
+const should = require('should')
+const MQ = require('../../index').MQ
+const Queue = require('../../index').Queue
+const EventEmitter = require('events')
 
 describe('Queue Send', function () {
-  var config = {
+  const config = {
     exchange_name: 'rabbitmq_lib_test',
     url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/',
     connectMaxAttempts: 1,
     connectDelayMS: 100,
   }
 
-  var mq1 = new MQ(config)
-  var mq2 = new MQ(config)
+  const mq1 = new MQ(config)
+  const mq2 = new MQ(config)
 
-  var queue = new Queue()
-  var sender = new Queue()
+  const queue = new Queue()
+  const sender = new Queue()
 
   before(async function () {
     await mq1.connect()
-    var channelConsumer = await mq1.createChannel()
+    const channelConsumer = await mq1.createChannel()
     queue.setChannel(channelConsumer)
 
     await mq2.connect()
-    var channelSender = await mq2.createChannel()
+    const channelSender = await mq2.createChannel()
     sender.setChannel(channelSender)
     return
   })
@@ -35,13 +35,13 @@ describe('Queue Send', function () {
 
   it('Should be able to send a message to a queue and receive it', async function () {
     try {
-      var queueName = 'queueSendMessage'
+      const queueName = 'queueSendMessage'
 
       queue.once(queueName, function (data) {
         data.should.have.property('message', 'testing queues')
       })
 
-      var listener = await queue.listen(queueName)
+      const listener = await queue.listen(queueName)
 
       await sender.send(queueName, {
         message: 'testing queues',
@@ -53,7 +53,7 @@ describe('Queue Send', function () {
 
   it('Should be able to send a message to a queue and receive a generic event', async function () {
     try {
-      var queueName = 'genericEvent'
+      const queueName = 'genericEvent'
 
       queue.on('queueEventReceived', function (data) {
         // it can receive multiple events from other tests
@@ -65,7 +65,7 @@ describe('Queue Send', function () {
         }
       })
 
-      var listener = await queue.listen(queueName)
+      const listener = await queue.listen(queueName)
 
       await sender.send(queueName, {
         message: 'testing queues',
@@ -77,9 +77,9 @@ describe('Queue Send', function () {
 
   it('Should be able to send two messages to two different queues and receive them', async function () {
     try {
-      var events = new EventEmitter()
-      var queueName1 = 'test__queueOne.abc'
-      var queueName2 = 'test__queueTwo.abc'
+      const events = new EventEmitter()
+      const queueName1 = 'test__queueOne.abc'
+      const queueName2 = 'test__queueTwo.abc'
 
       queue.once(queueName1, function (data) {
         data.should.have.property('message', 'Queue One')
@@ -89,7 +89,7 @@ describe('Queue Send', function () {
         data.should.have.property('message', 'Queue Two')
       })
 
-      var queues = ['test__queueOne.abc', 'test__queueTwo.abc']
+      const queues = ['test__queueOne.abc', 'test__queueTwo.abc']
       await queue.listen(queues)
 
       await sender.send(queueName1, {
@@ -107,14 +107,14 @@ describe('Queue Send', function () {
 
 describe('frameMax negotiation', function () {
   it('Should negotiate frameMax from the connection URL query', async function () {
-    var mq = new MQ({
+    const mq = new MQ({
       exchange_name: 'rabbitmq_lib_test',
       url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/',
       connectMaxAttempts: 1,
       connectDelayMS: 100,
     })
 
-    var connection = await mq.connect()
+    const connection = await mq.connect()
     // RabbitMQ 4.x rejects anything below 8192: if the URL-based frameMax
     // were not applied, the negotiated value would stay 4096 and this
     // assertion (and the connection itself) would fail. The negotiated
@@ -127,7 +127,7 @@ describe('frameMax negotiation', function () {
 describe('Queue listenManual', function () {
   this.timeout(20000)
 
-  var config = {
+  const config = {
     exchange_name: 'rabbitmq_lib_test',
     // RabbitMQ 4.x brokers reject amqplib's default frame_max (4096), the query
     // parameter negotiates a frame size the broker accepts
@@ -136,18 +136,18 @@ describe('Queue listenManual', function () {
     connectDelayMS: 100,
   }
 
-  var mqConsumer = new MQ(config)
-  var mqSender = new MQ(config)
+  const mqConsumer = new MQ(config)
+  const mqSender = new MQ(config)
 
-  var delay = function (ms) {
+  const delay = function (ms) {
     return new Promise(function (resolve) {
       setTimeout(resolve, ms)
     })
   }
 
-  var createQueuePair = async function () {
-    var consumer = new Queue()
-    var sender = new Queue()
+  const createQueuePair = async function () {
+    const consumer = new Queue()
+    const sender = new Queue()
     consumer.setChannel(await mqConsumer.createChannel())
     sender.setChannel(await mqSender.createChannel())
     return { consumer: consumer, sender: sender }
@@ -165,15 +165,15 @@ describe('Queue listenManual', function () {
   })
 
   it('Should ack the message after the handler resolves and keep processing the queue', async function () {
-    var pair = await createQueuePair()
-    var consumer = pair.consumer
-    var sender = pair.sender
+    const pair = await createQueuePair()
+    const consumer = pair.consumer
+    const sender = pair.sender
 
-    var queueName = 'manualAckTest'
+    const queueName = 'manualAckTest'
     // queues are durable and survive on the shared broker between runs, start clean
     await consumer.channel.deleteQueue(queueName)
 
-    var received = []
+    const received = []
     await consumer.listenManual(queueName, async function (data, message) {
       received.push({
         message: data.message,
@@ -199,12 +199,12 @@ describe('Queue listenManual', function () {
   })
 
   it('Should deliver messages in priority order when the queue has x-max-priority', async function () {
-    var pair = await createQueuePair()
-    var consumer = pair.consumer
-    var sender = pair.sender
+    const pair = await createQueuePair()
+    const consumer = pair.consumer
+    const sender = pair.sender
 
-    var queueName = 'manualPriorityTest'
-    var queueArguments = { 'x-max-priority': 10 }
+    const queueName = 'manualPriorityTest'
+    const queueArguments = { 'x-max-priority': 10 }
     await consumer.channel.deleteQueue(queueName)
 
     // Queue.send asserts the queue with its own queueOptions, so the sender needs
@@ -232,7 +232,7 @@ describe('Queue listenManual', function () {
       { priority: 9 },
     )
 
-    var order = []
+    const order = []
     await consumer.listenManual(
       queueName,
       async function (data, message) {
@@ -249,11 +249,11 @@ describe('Queue listenManual', function () {
   })
 
   it('Should deliver a message when sendOptions is null (default options apply)', async function () {
-    var pair = await createQueuePair()
-    var consumer = pair.consumer
-    var sender = pair.sender
+    const pair = await createQueuePair()
+    const consumer = pair.consumer
+    const sender = pair.sender
 
-    var queueName = 'manualNullSendOptions'
+    const queueName = 'manualNullSendOptions'
     await consumer.channel.deleteQueue(queueName)
 
     // the sender re-asserts the queue on send: its options must match the
@@ -263,7 +263,7 @@ describe('Queue listenManual', function () {
       arguments: { 'x-max-priority': 10 },
     }
 
-    var received = []
+    const received = []
     await consumer.listenManual(
       queueName,
       async function (data) {
@@ -286,15 +286,15 @@ describe('Queue listenManual', function () {
   })
 
   it('Should contain acknowledgement failures when the channel closes mid-task', async function () {
-    var pair = await createQueuePair()
-    var consumer = pair.consumer
-    var sender = pair.sender
+    const pair = await createQueuePair()
+    const consumer = pair.consumer
+    const sender = pair.sender
 
-    var queueName = 'manualClosedChannel'
+    const queueName = 'manualClosedChannel'
     await consumer.channel.deleteQueue(queueName)
 
-    var unhandledRejection = 'none'
-    var onUnhandled = function (err) {
+    let unhandledRejection = 'none'
+    const onUnhandled = function (err) {
       unhandledRejection = err
     }
     process.on('unhandledRejection', onUnhandled)
@@ -318,15 +318,15 @@ describe('Queue listenManual', function () {
   })
 
   it('Should drop a failed task by default (onFailure ack) and keep processing the queue', async function () {
-    var pair = await createQueuePair()
-    var consumer = pair.consumer
-    var sender = pair.sender
+    const pair = await createQueuePair()
+    const consumer = pair.consumer
+    const sender = pair.sender
 
-    var queueName = 'manualDropTest'
+    const queueName = 'manualDropTest'
     await consumer.channel.deleteQueue(queueName)
 
-    var received = []
-    var failures = []
+    const received = []
+    const failures = []
     consumer.on('failed', function (info) {
       failures.push(info)
     })
@@ -358,14 +358,14 @@ describe('Queue listenManual', function () {
   })
 
   it('Should requeue a failed task once when onFailure is requeue and succeed on the redelivered attempt', async function () {
-    var pair = await createQueuePair()
-    var consumer = pair.consumer
-    var sender = pair.sender
+    const pair = await createQueuePair()
+    const consumer = pair.consumer
+    const sender = pair.sender
 
-    var queueName = 'manualRequeueTest'
+    const queueName = 'manualRequeueTest'
     await consumer.channel.deleteQueue(queueName)
 
-    var attempts = []
+    const attempts = []
     await consumer.listenManual(
       queueName,
       async function (data, message) {
@@ -394,23 +394,23 @@ describe('Queue listenManual', function () {
   })
 
   it('Should respect a prefetch of one per queue across two queues with globalPrefetch true', async function () {
-    var pair = await createQueuePair()
-    var consumer = pair.consumer
-    var sender = pair.sender
+    const pair = await createQueuePair()
+    const consumer = pair.consumer
+    const sender = pair.sender
 
-    var queueName1 = 'manualPrefetchQ1'
-    var queueName2 = 'manualPrefetchQ2'
+    const queueName1 = 'manualPrefetchQ1'
+    const queueName2 = 'manualPrefetchQ2'
     await consumer.channel.deleteQueue(queueName1)
     await consumer.channel.deleteQueue(queueName2)
 
-    var activePerQueue = {}
-    var maxPerQueue = {}
+    const activePerQueue = {}
+    const maxPerQueue = {}
     maxPerQueue[queueName1] = 0
     maxPerQueue[queueName2] = 0
-    var processed = 0
+    let processed = 0
 
-    var slowHandler = async function (data, message) {
-      var queueName = message.fields.routingKey
+    const slowHandler = async function (data, message) {
+      const queueName = message.fields.routingKey
       activePerQueue[queueName] = (activePerQueue[queueName] || 0) + 1
       if (activePerQueue[queueName] > maxPerQueue[queueName]) {
         maxPerQueue[queueName] = activePerQueue[queueName]
@@ -535,22 +535,22 @@ describe('Queue listen failure containment', function () {
 })
 
 describe('Queue listener containment', function () {
-  var config = {
+  const config = {
     exchange_name: 'rabbitmq_lib_test',
     url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/',
     connectMaxAttempts: 1,
     connectDelayMS: 100,
   }
 
-  var mq1 = new MQ(config)
-  var mq2 = new MQ(config)
+  const mq1 = new MQ(config)
+  const mq2 = new MQ(config)
 
-  var queue = new Queue()
-  var sender = new Queue()
-  var failures = []
-  var processed = []
-  var queueName = 'listenerContainmentTest'
-  var eventName = 'listenerContainmentTest'
+  const queue = new Queue()
+  const sender = new Queue()
+  let failures = []
+  let processed = []
+  const queueName = 'listenerContainmentTest'
+  const eventName = 'listenerContainmentTest'
 
   before(async function () {
     failures = []

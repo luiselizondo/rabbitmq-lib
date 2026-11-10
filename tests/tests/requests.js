@@ -1,15 +1,15 @@
-var should = require('should')
-var MQ = require('../../index').MQ
-var RPC = require('../../index').RPC
-var EventEmitter = require('events')
+const should = require('should')
+const MQ = require('../../index').MQ
+const RPC = require('../../index').RPC
+const EventEmitter = require('events')
 class Events extends EventEmitter {}
 
 describe('RPC Error', function () {
   it('Should throw an error if no connection is set', async function () {
     try {
-      var sender = new RPC()
+      const sender = new RPC()
 
-      var data = await sender.send('getSuperhero', {
+      const data = await sender.send('getSuperhero', {
         name: 'Batman',
       })
     } catch (err) {
@@ -22,25 +22,25 @@ describe('RPC Error', function () {
 })
 
 describe('Requests', function () {
-  var config = {
+  const config = {
     exchange_name: 'rabbitmq_lib_test',
     url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/',
     connectMaxAttempts: 1,
     connectDelayMS: 100,
   }
 
-  var mq1 = new MQ(config)
-  var mq2 = new MQ(config)
+  const mq1 = new MQ(config)
+  const mq2 = new MQ(config)
 
-  var rpc = new RPC()
-  var sender = new RPC()
+  const rpc = new RPC()
+  const sender = new RPC()
 
   before(async function () {
     await mq1.connect()
-    var channelConsumer = await mq1.createChannel()
+    const channelConsumer = await mq1.createChannel()
     rpc.setChannel(channelConsumer)
 
-    var connection = await mq2.connect()
+    const connection = await mq2.connect()
     return sender.setConnection(connection)
   })
 
@@ -51,19 +51,19 @@ describe('Requests', function () {
 
   it('Should be able to send a request, answer it and respond to it', async function () {
     try {
-      var queueName = 'someEventOnQueue4'
+      const queueName = 'someEventOnQueue4'
 
       function callbackToExecute (data, next) {
-        return next(false, { message: 'Tested ' + data.testKey })
+        return next(false, { message: `Tested ${data.testKey}` })
       }
 
-      var listener = await rpc.listen(queueName, callbackToExecute)
+      const listener = await rpc.listen(queueName, callbackToExecute)
 
-      var result = await sender.send(queueName, {
+      const result = await sender.send(queueName, {
         testKey: 'testName',
       })
 
-      var response = JSON.parse(result)
+      const response = JSON.parse(result)
       response.should.have.property('type', 'success')
       response.results.should.have.property('message', 'Tested testName')
     } catch (err) {
@@ -73,19 +73,19 @@ describe('Requests', function () {
 
   it('Should be able to send a request, and respond with an error', async function () {
     try {
-      var queueName = 'requestError'
+      const queueName = 'requestError'
 
       function callbackToExecute (data, next) {
         return next('No valid request')
       }
 
-      var listener = await rpc.listen(queueName, callbackToExecute)
+      const listener = await rpc.listen(queueName, callbackToExecute)
 
-      var result = await sender.send(queueName, {
+      const result = await sender.send(queueName, {
         testKey: 'invalid',
       })
 
-      var response = JSON.parse(result)
+      const response = JSON.parse(result)
       response.should.have.property('type', 'error')
       response.should.have.property('error', 'No valid request')
     } catch (err) {
@@ -95,19 +95,19 @@ describe('Requests', function () {
 
   it('Should be able to send a request, and respond with an error', async function () {
     try {
-      var queueName = 'requestError'
+      const queueName = 'requestError'
 
       function callbackToExecute (data, next) {
         return next('No valid request')
       }
 
-      var listener = await rpc.listen(queueName, callbackToExecute)
+      const listener = await rpc.listen(queueName, callbackToExecute)
 
-      var result = await sender.send(queueName, {
+      const result = await sender.send(queueName, {
         testKey: 'invalid',
       })
 
-      var response = JSON.parse(result)
+      const response = JSON.parse(result)
       response.should.have.property('type', 'error')
       response.should.have.property('error', 'No valid request')
     } catch (err) {
@@ -117,19 +117,19 @@ describe('Requests', function () {
 
   it('Should be able to send a request, and respond with an error because of empty results', async function () {
     try {
-      var queueName = 'requestError2'
+      const queueName = 'requestError2'
 
       function callbackToExecute (data, next) {
         return next(false, null)
       }
 
-      var listener = await rpc.listen(queueName, callbackToExecute)
+      const listener = await rpc.listen(queueName, callbackToExecute)
 
-      var result = await sender.send(queueName, {
+      const result = await sender.send(queueName, {
         testKey: 'invalid',
       })
 
-      var response = JSON.parse(result)
+      const response = JSON.parse(result)
       response.should.have.property('type', 'error')
       response.should.have.property('error', 'No data found')
     } catch (err) {
@@ -173,7 +173,7 @@ describe('Requests', function () {
     consumerRpc.setChannel(channel)
 
     function callbackToExecute (data, next) {
-      return next(false, { message: 'Contained ' + data.testKey })
+      return next(false, { message: `Contained ${data.testKey}` })
     }
 
     await consumerRpc.listen(queueName, callbackToExecute)
