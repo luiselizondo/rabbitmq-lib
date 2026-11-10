@@ -855,8 +855,10 @@ describe('Queue listenManual failure containment', function () {
 
     process.removeListener('unhandledRejection', onUnhandled)
     expect(unhandledRejection).to.equal('none')
-    // the listener failure is reported first (channel closed -> connection
-    // error), then the ack that follows throws and is reported by the ack catch
+    // Both failures are ack failures: closing the channel inside the async
+    // listener makes the ack in the try block throw ('Channel closing'), and
+    // the ack inside the catch throws the same way. emit() does not await
+    // listeners, so the async listener itself cannot produce a failed event.
     expect(failures).to.have.lengthOf(2)
     expect(failures[0]).to.have.property('queueName', queueName)
     expect(failures[0]).to.have.property('error')
