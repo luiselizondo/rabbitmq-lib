@@ -216,4 +216,39 @@ describe('MQ reconnection', function () {
     expect(rejection).to.not.be.an.instanceOf(TypeError)
     expect(rejection.message).to.match(/No connection/)
   })
+
+  it('Should keep a connection installed during disconnect by a close listener', async function () {
+    this.timeout(20000)
+    const mq = new MQ(config)
+    await mq.connect()
+    const oldConnection = mq.connection
+    const replacement = await new MQ(config).connect()
+
+    const connectionClosed = []
+    mq.on('connectionClosed', () => connectionClosed.push(true))
+    // A recovery handler that synchronously installs a replacement while the
+    // close is still pending — the documented reconnect/setConnection pattern.
+    mq.on('close', () => {
+      mq.setConnection(replacement)
+      mq.isConnected = true
+    })
+
+    // Make the 'close' event arrive while disconnect() is still awaiting
+    // close(): that is the race window. State installed there must survive.
+    oldConnection.close = async () => {
+      mq.emit('close')
+    }
+
+    await mq.disconnect()
+
+    expect(mq.connection).to.equal(replacement)
+    expect(mq.isConnected).to.equal(true)
+    const channel = await mq.createChannel()
+    expect(channel).to.be.an('object')
+    expect(connectionClosed).to.have.lengthOf(0)
+
+    delete oldConnection.close
+    await oldConnection.close().catch(() => {})
+    await mq.disconnect().catch(() => {})
+  })
 })
