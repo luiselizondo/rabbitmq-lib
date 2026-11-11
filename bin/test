@@ -47,7 +47,7 @@ fi
 
 if [ ! -d "node_modules" ]; then
   echo "Installing dependencies"
-  docker run --rm -v ${PWD}:/app -w /app rever/node:22-alpine npm install
+  docker run --rm -v ${PWD}:/app -w /app node:22-alpine npm install
 fi
 
 echo "Waiting for the broker to accept connections"
@@ -58,4 +58,4 @@ docker run --rm --name rabbitmq_lib_test_runner \
   --link ${RABBIT_CONTAINER_NAME}:rabbitmq \
   -v ${PWD}:/app -w /app \
   -e "NODE_ENV=test" \
-  rever/node:22-alpine npm test
+  node:22-alpine npm test
