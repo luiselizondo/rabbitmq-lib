@@ -143,6 +143,22 @@ describe('RPC wire contract', function () {
     expect(fromPlainObject.error).to.not.have.property('stack')
   })
 
+  it('Should not let a toJSON hook reintroduce the stack', async function () {
+    const response = await roundTrip('rpcWireErrorToJSON', function (data, next) {
+      const original = new Error('boom')
+      return next({
+        name: 'Error',
+        message: 'boom',
+        toJSON: () => ({ name: 'Error', message: 'boom', stack: original.stack }),
+      })
+    })
+
+    expect(response).to.have.property('type', 'error')
+    expect(response.error).to.be.an('object')
+    expect(response.error).to.not.have.property('stack')
+    expect(JSON.stringify(response)).to.not.include('Error: boom')
+  })
+
   it('Should keep the success envelope unchanged', async function () {
     const payload = { message: 'Tested wire', nested: { count: 2 } }
     const response = await roundTrip('rpcWireSuccess', function (data, next) {
