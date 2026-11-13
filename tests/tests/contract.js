@@ -121,6 +121,28 @@ describe('RPC wire contract', function () {
     })
   })
 
+  it('Should never send the stack, even when it is an own enumerable property', async function () {
+    const fromError = await roundTrip('rpcWireErrorStackInstance', function (data, next) {
+      const error = new Error('boom')
+      error.stack = 'private stack details'
+      return next(error)
+    })
+
+    expect(fromError).to.have.property('type', 'error')
+    expect(fromError.error).to.be.an('object')
+    expect(fromError.error).to.have.property('message', 'boom')
+    expect(fromError.error).to.not.have.property('stack')
+
+    const fromPlainObject = await roundTrip('rpcWireErrorStackObject', function (data, next) {
+      return next({ name: 'Error', message: 'boom', stack: 'private stack details' })
+    })
+
+    expect(fromPlainObject).to.have.property('type', 'error')
+    expect(fromPlainObject.error).to.be.an('object')
+    expect(fromPlainObject.error).to.have.property('message', 'boom')
+    expect(fromPlainObject.error).to.not.have.property('stack')
+  })
+
   it('Should keep the success envelope unchanged', async function () {
     const payload = { message: 'Tested wire', nested: { count: 2 } }
     const response = await roundTrip('rpcWireSuccess', function (data, next) {

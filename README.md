@@ -266,7 +266,7 @@ Parse failures and callback failures are contained: the error is logged, `failed
 `response.error` is made JSON-safe before the reply is published:
 
 - a string is sent unchanged;
-- an `Error` or a plain object is sent as `{ name, message, ...own enumerable properties }`, so `new Error('boom')` arrives as `{ name: 'Error', message: 'boom' }` (the stack is never sent) — attach only what you intend to send across the wire;
+- an `Error` or a plain object is sent as `{ name, message, ...own enumerable properties }`, so `new Error('boom')` arrives as `{ name: 'Error', message: 'boom' }`; the top-level `stack` property is always excluded, even when attached as an own enumerable property — attach only what you intend to send across the wire;
 - anything else is sent as its `String()` form.
 
 Consumers should still throw or pass typed errors with contract-compliant `name` values; the service-api error mapping table selects the response from that `name`.
