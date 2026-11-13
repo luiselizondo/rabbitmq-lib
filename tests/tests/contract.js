@@ -47,6 +47,91 @@ describe('public contract', function () {
   })
 })
 
+describe('RPC wire contract', function () {
+  const config = {
+    exchange_name: 'rabbitmq_lib_contract_test',
+    url: 'amqp://rabbitmq:rabbitmq@rabbitmq:5672/',
+    connectMaxAttempts: 1,
+    connectDelayMS: 100,
+  }
+
+  const mqServer = new lib.MQ(config)
+  const mqClient = new lib.MQ(config)
+
+  const rpc = new lib.RPC()
+  const sender = new lib.RPC()
+
+  before(async function () {
+    await mqServer.connect()
+    const channel = await mqServer.createChannel()
+    rpc.setChannel(channel)
+
+    const connection = await mqClient.connect()
+    return sender.setConnection(connection)
+  })
+
+  after(async function () {
+    await mqServer.disconnect()
+    return await mqClient.disconnect()
+  })
+
+  async function roundTrip (queueName, handler) {
+    await rpc.listen(queueName, handler)
+    const result = await sender.send(queueName, { testKey: 'wire' })
+
+    return JSON.parse(result)
+  }
+
+  it('Should serialize an Error instance as { name, message } instead of {}', async function () {
+    const response = await roundTrip('rpcWireErrorInstance', function (data, next) {
+      return next(new Error('boom'))
+    })
+
+    expect(response).to.have.property('type', 'error')
+    expect(response.error).to.be.an('object')
+    expect(response.error).to.have.property('name', 'Error')
+    expect(response.error).to.have.property('message', 'boom')
+  })
+
+  it('Should pass a thrown string error through unchanged', async function () {
+    const response = await roundTrip('rpcWireErrorString', function (data, next) {
+      return next('No data found')
+    })
+
+    expect(response).to.have.property('type', 'error')
+    expect(response.error).to.equal('No data found')
+  })
+
+  it('Should preserve every property of a custom error object', async function () {
+    const response = await roundTrip('rpcWireErrorObject', function (data, next) {
+      return next({
+        name: 'VALIDATION_ERROR',
+        message: 'bad',
+        code: 406,
+        error_data: { id: 'x' },
+      })
+    })
+
+    expect(response).to.have.property('type', 'error')
+    expect(response.error).to.eql({
+      name: 'VALIDATION_ERROR',
+      message: 'bad',
+      code: 406,
+      error_data: { id: 'x' },
+    })
+  })
+
+  it('Should keep the success envelope unchanged', async function () {
+    const payload = { message: 'Tested wire', nested: { count: 2 } }
+    const response = await roundTrip('rpcWireSuccess', function (data, next) {
+      return next(false, payload)
+    })
+
+    expect(response).to.have.property('type', 'success')
+    expect(response.results).to.eql(payload)
+  })
+})
+
 describe('Internal wiring', function () {
   it('Should store a manually injected connection via MQ setConnection', function () {
     const mq = new lib.MQ({ url: 'amqp://u:p@h:5672/' })
