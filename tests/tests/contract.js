@@ -162,6 +162,7 @@ describe('RPC wire contract', function () {
       function LeakyError (message) {
         this.name = 'LeakyError'
         this.message = message
+        this.stack = `LeakyError: ${message}\n    at captured-site`
         this.toJSON = () => ({ message: this.message, stack: this.stack })
       }
       return next(new LeakyError('boom'))
