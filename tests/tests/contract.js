@@ -124,7 +124,7 @@ describe('RPC wire contract', function () {
   it('Should never send the stack, even when it is an own enumerable property', async function () {
     const fromError = await roundTrip('rpcWireErrorStackInstance', function (data, next) {
       const error = new Error('boom')
-      error.stack = 'private stack details'
+      Object.defineProperty(error, 'stack', { value: 'private stack details', enumerable: true })
       return next(error)
     })
 
