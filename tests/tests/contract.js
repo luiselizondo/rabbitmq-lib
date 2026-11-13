@@ -157,6 +157,20 @@ describe('RPC wire contract', function () {
     expect(response.error).to.be.an('object')
     expect(response.error).to.not.have.property('stack')
     expect(JSON.stringify(response)).to.not.include('Error: boom')
+
+    const fromConstructorCapture = await roundTrip('rpcWireErrorToJSONThis', function (data, next) {
+      function LeakyError (message) {
+        this.name = 'LeakyError'
+        this.message = message
+        this.toJSON = () => ({ message: this.message, stack: this.stack })
+      }
+      return next(new LeakyError('boom'))
+    })
+
+    expect(fromConstructorCapture).to.have.property('type', 'error')
+    expect(fromConstructorCapture.error).to.be.an('object')
+    expect(fromConstructorCapture.error).to.not.have.property('stack')
+    expect(JSON.stringify(fromConstructorCapture)).to.not.include('LeakyError: boom')
   })
 
   it('Should keep the success envelope unchanged', async function () {
