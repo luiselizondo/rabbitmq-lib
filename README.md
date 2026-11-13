@@ -261,6 +261,16 @@ console.log(reply) // { type: 'success', results: 5 }
 
 Parse failures and callback failures are contained: the error is logged, `failed` is emitted and the message is acknowledged, so one bad request cannot tear down the consumer.
 
+### Error serialization
+
+`response.error` is made JSON-safe before the reply is published:
+
+- a string is sent unchanged;
+- an `Error` or a plain object is sent as `{ name, message, ...own enumerable properties }`, so `new Error('boom')` arrives as `{ name: 'Error', message: 'boom' }` (the stack is never sent) — attach only what you intend to send across the wire;
+- anything else is sent as its `String()` form.
+
+Consumers should still throw or pass typed errors with contract-compliant `name` values; the service-api error mapping table selects the response from that `name`.
+
 **Timeouts are a normal outcome, not an error.** When no reply arrives within `expiration` milliseconds, `send()` resolves with `undefined`; it does not reject. Only missing configuration and broker failures reject.
 
 ### Events
