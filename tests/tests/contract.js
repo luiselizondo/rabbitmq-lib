@@ -121,6 +121,59 @@ describe('RPC wire contract', function () {
     })
   })
 
+  it('Should never send the stack, even when it is an own enumerable property', async function () {
+    const fromError = await roundTrip('rpcWireErrorStackInstance', function (data, next) {
+      const error = new Error('boom')
+      Object.defineProperty(error, 'stack', { value: 'private stack details', enumerable: true })
+      return next(error)
+    })
+
+    expect(fromError).to.have.property('type', 'error')
+    expect(fromError.error).to.be.an('object')
+    expect(fromError.error).to.have.property('message', 'boom')
+    expect(fromError.error).to.not.have.property('stack')
+
+    const fromPlainObject = await roundTrip('rpcWireErrorStackObject', function (data, next) {
+      return next({ name: 'Error', message: 'boom', stack: 'private stack details' })
+    })
+
+    expect(fromPlainObject).to.have.property('type', 'error')
+    expect(fromPlainObject.error).to.be.an('object')
+    expect(fromPlainObject.error).to.have.property('message', 'boom')
+    expect(fromPlainObject.error).to.not.have.property('stack')
+  })
+
+  it('Should not let a toJSON hook reintroduce the stack', async function () {
+    const response = await roundTrip('rpcWireErrorToJSON', function (data, next) {
+      const original = new Error('boom')
+      return next({
+        name: 'Error',
+        message: 'boom',
+        toJSON: () => ({ name: 'Error', message: 'boom', stack: original.stack }),
+      })
+    })
+
+    expect(response).to.have.property('type', 'error')
+    expect(response.error).to.be.an('object')
+    expect(response.error).to.not.have.property('stack')
+    expect(JSON.stringify(response)).to.not.include('Error: boom')
+
+    const fromConstructorCapture = await roundTrip('rpcWireErrorToJSONThis', function (data, next) {
+      function LeakyError (message) {
+        this.name = 'LeakyError'
+        this.message = message
+        this.stack = `LeakyError: ${message}\n    at captured-site`
+        this.toJSON = () => ({ message: this.message, stack: this.stack })
+      }
+      return next(new LeakyError('boom'))
+    })
+
+    expect(fromConstructorCapture).to.have.property('type', 'error')
+    expect(fromConstructorCapture.error).to.be.an('object')
+    expect(fromConstructorCapture.error).to.not.have.property('stack')
+    expect(JSON.stringify(fromConstructorCapture)).to.not.include('LeakyError: boom')
+  })
+
   it('Should keep the success envelope unchanged', async function () {
     const payload = { message: 'Tested wire', nested: { count: 2 } }
     const response = await roundTrip('rpcWireSuccess', function (data, next) {
